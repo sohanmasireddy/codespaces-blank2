@@ -36,7 +36,7 @@ test('model endpoint returns only the configured production models', async () =>
   const models: Array<{ id: string }> = await response.json();
   assert.deepEqual(
     models.map((model) => model.id),
-    ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+    ['openai/gpt-oss-20b', 'openai/gpt-oss-120b'],
   );
 });
 
@@ -55,16 +55,32 @@ test('chat endpoint rejects unlisted models before contacting Groq', async () =>
   assert.deepEqual((await response.json()).error, 'Invalid chat request.');
 });
 
+test('chat endpoint rejects unsupported reasoning levels', async () => {
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'openai/gpt-oss-20b',
+      messages: [{ role: 'user', content: 'hello' }],
+      systemPrompt: '',
+      reasoningEffort: 'maximum',
+      maxTokens: 100,
+    }),
+  });
+  assert.equal(response.status, 400);
+  assert.deepEqual((await response.json()).error, 'Invalid chat request.');
+});
+
 test('valid chat requests report missing server credentials without calling Groq', async () => {
   delete process.env['GROQ_API_KEY'];
   const response = await fetch(`${baseUrl}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-20b',
       messages: [{ role: 'user', content: 'hello' }],
       systemPrompt: 'You are a helpful assistant.',
-      temperature: 0.7,
+      reasoningEffort: 'medium',
       maxTokens: 100,
     }),
   });

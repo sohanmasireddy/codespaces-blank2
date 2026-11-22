@@ -1,5 +1,6 @@
 export type MessageRole = 'user' | 'assistant';
 export type ThemePreference = 'system' | 'light' | 'dark';
+export type ThinkingLevel = 'low' | 'medium' | 'high';
 
 export interface TokenUsage {
   promptTokens: number;
@@ -29,10 +30,12 @@ export interface ModelInfo {
   contextWindow: number;
   maxCompletionTokens: number;
   supportsTemperature: boolean;
+  supportsReasoning: boolean;
 }
 
 export interface ChatSettings {
   model: string;
+  thinkingLevel: ThinkingLevel;
   systemPrompt: string;
   temperature: number;
   maxTokens: number;
@@ -43,6 +46,7 @@ export interface ChatRequest {
   model: string;
   messages: Array<Pick<ChatMessage, 'role' | 'content'>>;
   systemPrompt: string;
+  reasoningEffort?: ThinkingLevel;
   temperature?: number;
   maxTokens: number;
 }

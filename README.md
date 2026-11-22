@@ -58,11 +58,13 @@ the frontend bundle or returned by an endpoint. Streaming errors are returned
 as safe, user-facing messages. If Groq reports usage in a stream, the UI shows
 the token total; the current stream API does not guarantee usage metadata.
 
-The model allowlist is centralized in `server/models.ts`. It currently contains
-the production `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` IDs listed
-in [Groq's supported models documentation](https://console.groq.com/docs/models).
-The server does not silently substitute a model. Update the allowlist and
-limits when Groq's catalog changes.
+The model allowlist is centralized in `server/models.ts`. It contains Groq's
+`openai/gpt-oss-20b` and `openai/gpt-oss-120b` models. The composer exposes both
+models and their low, medium, and high reasoning levels. Text and code files,
+PDFs, and DOCX documents are extracted in the browser and included as text in
+the chat request; up to five files can be attached at once, each limited to
+5 MB, with extracted content capped at 40,000 characters per message. Update
+the allowlist and limits when Groq's catalog changes.
 
 ## Render deployment
 
@@ -84,7 +86,7 @@ Do not set a fixed `PORT` on Render. The service uses Render's assigned port.
 
 ## Data and safety
 
-- Browser `localStorage` stores conversations, selected model, prompt, and
+- Browser `localStorage` stores conversations, selected model, thinking level, prompt, and
   appearance. Clearing site data removes them; there is no server-side history
   or database.
 - Markdown is rendered by `ngx-markdown` with Angular's sanitizer enabled.

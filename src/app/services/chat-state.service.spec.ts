@@ -46,4 +46,23 @@ describe('ChatStateService', () => {
     expect(state.activeConversationId()).toBe(older.id);
     expect(state.activeConversation()?.title).toBe('Find my TypeScript notes');
   });
+
+  it('defaults the thinking level when loading older saved settings', () => {
+    localStorage.setItem(
+      'groq-chat.settings',
+      JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        systemPrompt: 'Keep my saved prompt',
+        temperature: 0.4,
+        maxTokens: 2000,
+        theme: 'dark',
+      }),
+    );
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [ChatStateService] });
+    state = TestBed.inject(ChatStateService);
+
+    expect(state.settings().thinkingLevel).toBe('medium');
+    expect(state.settings().systemPrompt).toBe('Keep my saved prompt');
+  });
 });

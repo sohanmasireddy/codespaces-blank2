@@ -27,6 +27,7 @@ const chatRequestSchema = z
         'Conversation contains too many messages. Start a new chat or remove earlier messages.',
       ),
     systemPrompt: z.string().max(8_000),
+    reasoningEffort: z.enum(['low', 'medium', 'high']).optional(),
     temperature: z.number().min(0).max(2).optional(),
     maxTokens: z.number().int().min(1).max(131_072),
   })
@@ -56,6 +57,13 @@ const chatRequestSchema = z
         code: 'custom',
         message: `Temperature is not supported by ${model.id}.`,
         path: ['temperature'],
+      });
+    }
+    if (model && request.reasoningEffort !== undefined && !model.supportsReasoning) {
+      context.addIssue({
+        code: 'custom',
+        message: `Reasoning effort is not supported by ${model.id}.`,
+        path: ['reasoningEffort'],
       });
     }
   });
@@ -179,6 +187,9 @@ export function createApp(): express.Express {
               ...parsed.data.messages,
             ],
             max_completion_tokens: parsed.data.maxTokens,
+            ...(model.supportsReasoning && parsed.data.reasoningEffort
+              ? { reasoning_effort: parsed.data.reasoningEffort }
+              : {}),
             ...(model.supportsTemperature && parsed.data.temperature !== undefined
               ? { temperature: parsed.data.temperature }
               : {}),

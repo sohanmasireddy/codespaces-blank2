@@ -1,17 +1,19 @@
 export const MODELS = [
   {
-    id: 'llama-3.3-70b-versatile',
-    label: 'Llama 3.3 70B',
+    id: 'openai/gpt-oss-20b',
+    label: 'GPT-OSS 20B',
     contextWindow: 131_072,
-    maxCompletionTokens: 32_768,
-    supportsTemperature: true,
+    maxCompletionTokens: 65_536,
+    supportsTemperature: false,
+    supportsReasoning: true,
   },
   {
-    id: 'llama-3.1-8b-instant',
-    label: 'Llama 3.1 8B Instant',
+    id: 'openai/gpt-oss-120b',
+    label: 'GPT-OSS 120B',
     contextWindow: 131_072,
-    maxCompletionTokens: 131_072,
-    supportsTemperature: true,
+    maxCompletionTokens: 65_536,
+    supportsTemperature: false,
+    supportsReasoning: true,
   },
 ] as const;
 

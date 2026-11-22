@@ -1,13 +1,20 @@
 import { DOCUMENT } from '@angular/common';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { ChatMessage, ChatSettings, Conversation, ConversationGroup } from '../models/chat.models';
+import {
+  ChatMessage,
+  ChatSettings,
+  Conversation,
+  ConversationGroup,
+  ThinkingLevel,
+} from '../models/chat.models';
 
 const CONVERSATIONS_KEY = 'groq-chat.conversations';
 const ACTIVE_CHAT_KEY = 'groq-chat.activeConversation';
 const SETTINGS_KEY = 'groq-chat.settings';
 
 const DEFAULT_SETTINGS: ChatSettings = {
-  model: 'llama-3.3-70b-versatile',
+  model: 'openai/gpt-oss-20b',
+  thinkingLevel: 'medium',
   systemPrompt: 'You are a helpful assistant.',
   temperature: 0.7,
   maxTokens: 4096,
@@ -52,11 +59,17 @@ function messageIsValid(value: unknown): value is ChatMessage {
   );
 }
 
-function settingsAreValid(value: unknown): value is ChatSettings {
+function settingsAreValid(
+  value: unknown,
+): value is Omit<ChatSettings, 'thinkingLevel'> & { thinkingLevel?: ThinkingLevel } {
   if (!value || typeof value !== 'object') return false;
   const settings = value as Partial<ChatSettings>;
   return (
     typeof settings.model === 'string' &&
+    (settings.thinkingLevel === undefined ||
+      settings.thinkingLevel === 'low' ||
+      settings.thinkingLevel === 'medium' ||
+      settings.thinkingLevel === 'high') &&
     typeof settings.systemPrompt === 'string' &&
     typeof settings.temperature === 'number' &&
     Number.isFinite(settings.temperature) &&
@@ -108,7 +121,9 @@ export class ChatStateService {
   readonly settings = signal<ChatSettings>(
     (() => {
       const value = readStorage<unknown>(SETTINGS_KEY, DEFAULT_SETTINGS);
-      return settingsAreValid(value) ? value : DEFAULT_SETTINGS;
+      return settingsAreValid(value)
+        ? { ...value, thinkingLevel: value.thinkingLevel ?? DEFAULT_SETTINGS.thinkingLevel }
+        : DEFAULT_SETTINGS;
     })(),
   );
   readonly activeConversation = computed(

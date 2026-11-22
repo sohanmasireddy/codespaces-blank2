@@ -1,242 +1,7 @@
-<div
-  class="app-shell"
-  [class.sidebar-collapsed]="!sidebarExpanded()"
-  [class.mobile-sidebar-visible]="mobileSidebarOpen()"
->
-  <aside class="sidebar" aria-label="Chat history">
-    <div class="sidebar-top">
-      <a class="brand" routerLink="/" aria-label="Groq Chat home">
-        <span class="brand-mark"><ng-icon name="lucideSparkles" size="19" /></span>
-        @if (sidebarExpanded()) {
-          <span class="brand-name">groq<span>chat</span></span>
-        }
-      </a>
-      <button
-        mat-icon-button
-        class="icon-button sidebar-collapse"
-        (click)="sidebarExpanded.set(!sidebarExpanded())"
-        [attr.aria-label]="sidebarExpanded() ? 'Collapse sidebar' : 'Expand sidebar'"
-        matTooltip="Toggle sidebar"
-      >
-        <ng-icon [name]="sidebarExpanded() ? 'lucidePanelLeftClose' : 'lucidePanelLeftOpen'" />
-      </button>
-    </div>
-
-    <div class="sidebar-actions">
-      <button mat-button class="new-chat-button" (click)="newChat()">
-        <ng-icon name="lucidePlus" />
-        @if (sidebarExpanded()) {
-          <span>New chat</span>
-        }
-      </button>
-      @if (sidebarExpanded()) {
-        <label class="search-box">
-          <ng-icon name="lucideSearch" size="17" />
-          <input
-            #chatSearch
-            type="search"
-            placeholder="Search chats"
-            aria-label="Search chat history"
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
-          />
-          <kbd>⌘ K</kbd>
-        </label>
-      }
-    </div>
-
-    <nav class="history-list" aria-label="Conversation history">
-      @if (sidebarExpanded()) {
-        @for (group of chatGroups(); track group.title) {
-          <section class="history-group">
-            <h2>{{ group.title }}</h2>
-            @for (chat of group.conversations; track chat.id) {
-              <div class="history-item" [class.selected]="state.activeConversationId() === chat.id">
-                @if (renamingId() === chat.id) {
-                  <form class="rename-form" (ngSubmit)="saveRename(chat.id)">
-                    <input
-                      matInput
-                      name="rename"
-                      aria-label="Conversation name"
-                      [ngModel]="renameDraft()"
-                      (ngModelChange)="renameDraft.set($event)"
-                      (blur)="saveRename(chat.id)"
-                      (keydown.escape)="cancelRename($event)"
-                    />
-                  </form>
-                } @else {
-                  <button
-                    class="history-title"
-                    (click)="selectConversation(chat.id)"
-                    [matTooltip]="chat.updatedAt | date: 'medium'"
-                    [attr.aria-current]="state.activeConversationId() === chat.id ? 'page' : null"
-                  >
-                    <span>{{ chat.title }}</span>
-                  </button>
-                  <div class="history-tools">
-                    <button
-                      mat-icon-button
-                      class="history-tool"
-                      aria-label="Rename conversation"
-                      matTooltip="Rename"
-                      (click)="renameConversation(chat.id, chat.title); $event.stopPropagation()"
-                    >
-                      <ng-icon name="lucidePencil" size="15" />
-                    </button>
-                    <button
-                      mat-icon-button
-                      class="history-tool"
-                      aria-label="Delete conversation"
-                      matTooltip="Delete"
-                      (click)="deleteConversation(chat.id, $event)"
-                    >
-                      <ng-icon name="lucideTrash" size="15" />
-                    </button>
-                  </div>
-                }
-              </div>
-            }
-          </section>
-        } @empty {
-          <p class="history-empty">
-            {{ searchQuery() ? 'No matching chats' : 'Your conversations will appear here' }}
-          </p>
-        }
-      } @else {
-        <button
-          mat-icon-button
-          class="collapsed-history-button"
-          aria-label="Show chat history"
-          matTooltip="Chat history"
-          (click)="sidebarExpanded.set(true)"
-        >
-          <ng-icon name="lucideHistory" />
-        </button>
-      }
-    </nav>
-
-    <div class="sidebar-bottom">
-      <button mat-button class="settings-button" (click)="settingsOpen.set(true)">
-        <ng-icon name="lucideSettings" />
-        @if (sidebarExpanded()) {
-          <span>Settings</span>
-        }
-      </button>
-      @if (sidebarExpanded()) {
-        <div class="account-row">
-          <div class="account-avatar">G</div>
-          <div class="account-copy">
-            <span>Groq Chat</span>
-            <small>Personal workspace</small>
-          </div>
-          <span class="account-status" aria-label="Ready"></span>
-        </div>
-      }
-    </div>
-  </aside>
-
-  @if (mobileSidebarOpen()) {
-    <button
-      class="mobile-backdrop"
-      aria-label="Close chat history"
-      (click)="mobileSidebarOpen.set(false)"
-    ></button>
-  }
-
+<div class="app-shell">
   <main class="main-panel" (click)="copyCode($event)">
-    <header class="topbar">
-      <div class="topbar-left">
-        <button
-          mat-icon-button
-          class="icon-button mobile-menu"
-          aria-label="Open chat history"
-          (click)="mobileSidebarOpen.set(true)"
-        >
-          <ng-icon name="lucidePanelLeftOpen" />
-        </button>
-        <span class="mobile-brand"><ng-icon name="lucideSparkles" size="17" /> groqchat</span>
-        <mat-form-field class="model-picker" appearance="outline">
-          <mat-select
-            aria-label="Choose model"
-            [value]="state.settings().model"
-            (selectionChange)="onModelChange($event.value)"
-          >
-            @for (model of models(); track model.id) {
-              <mat-option [value]="model.id">{{ model.label }}</mat-option>
-            }
-            @if (models().length && !selectedModel()) {
-              <mat-option [value]="state.settings().model" disabled>
-                {{ state.settings().model }} (unavailable)
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="topbar-right">
-        <span class="model-badge">
-          <span class="status-dot"></span>
-          Groq
-        </span>
-        <button
-          mat-icon-button
-          class="icon-button settings-shortcut"
-          aria-label="Open settings"
-          matTooltip="Settings"
-          (click)="settingsOpen.set(true)"
-        >
-          <ng-icon name="lucideSettings" />
-        </button>
-      </div>
-    </header>
-
-    @if (modelLoadError()) {
-      <div class="notice notice-warning" role="status">
-        <ng-icon name="lucideAlertCircle" />
-        <span>{{ modelLoadError() }}</span>
-        <button mat-button (click)="settingsOpen.set(true)">Settings</button>
-      </div>
-    }
-
-    <section class="chat-scroll" #messageScroll aria-live="polite">
-      @if (!state.activeConversation()?.messages?.length) {
-        <div class="welcome">
-          <div class="welcome-symbol"><ng-icon name="lucideSparkles" size="23" /></div>
-          <h1>What can I help with?</h1>
-          <p>A thoughtful assistant, ready when you are.</p>
-          <div class="suggestions">
-            <button
-              class="suggestion-card"
-              (click)="submitSuggestion('Explain a complex idea in simple terms: ')"
-            >
-              <span class="suggestion-icon"><ng-icon name="lucideMessageSquare" /></span>
-              <span
-                ><strong>Explain something</strong><small>Make a tricky topic click</small></span
-              >
-            </button>
-            <button
-              class="suggestion-card"
-              (click)="submitSuggestion('Help me write a TypeScript function that ')"
-            >
-              <span class="suggestion-icon"><ng-icon name="lucideCodeXml" /></span>
-              <span><strong>Write some code</strong><small>Build, debug, or explore</small></span>
-            </button>
-            <button
-              class="suggestion-card"
-              (click)="submitSuggestion('Give me a few thoughtful ideas for ')"
-            >
-              <span class="suggestion-icon"><ng-icon name="lucideLightbulb" /></span>
-              <span
-                ><strong>Find inspiration</strong
-                ><small>Start with a fresh perspective</small></span
-              >
-            </button>
-            <button class="suggestion-card" (click)="submitSuggestion('Help me plan a ')">
-              <span class="suggestion-icon"><ng-icon name="lucideCalendarDays" /></span>
-              <span><strong>Make a plan</strong><small>Turn a goal into next steps</small></span>
-            </button>
-          </div>
-        </div>
-      } @else {
+    @if (state.activeConversation()?.messages?.length) {
+      <section class="chat-scroll" #messageScroll aria-live="polite">
         <div class="message-list">
           @for (message of state.activeConversation()?.messages ?? []; track message.id) {
             <article
@@ -297,19 +62,46 @@
             </article>
           }
         </div>
-      }
-      @if (errorMessage()) {
-        <div class="notice notice-error" role="alert">
-          <ng-icon name="lucideAlertCircle" />
-          <span>{{ errorMessage() }}</span>
-          <button mat-icon-button aria-label="Dismiss error" (click)="errorMessage.set('')">
-            <ng-icon name="lucideX" />
-          </button>
+      </section>
+      <ng-container *ngTemplateOutlet="composerContent"></ng-container>
+    } @else {
+      <section class="landing">
+        <h1>Fastest chatbot</h1>
+        <ng-container *ngTemplateOutlet="composerContent"></ng-container>
+      </section>
+    }
+
+    @if (errorMessage()) {
+      <div class="notice notice-error" role="alert">
+        <ng-icon name="lucideAlertCircle" />
+        <span>{{ errorMessage() }}</span>
+        <button mat-icon-button aria-label="Dismiss error" (click)="errorMessage.set('')">
+          <ng-icon name="lucideX" />
+        </button>
+      </div>
+    }
+  </main>
+
+  <ng-template #composerContent>
+    <footer class="composer-area">
+      @if (attachments().length) {
+        <div class="attachment-list" aria-label="Attached files">
+          @for (file of attachments(); track $index; let index = $index) {
+            <span class="attachment-chip">
+              <span class="attachment-name">{{ file.name }}</span>
+              <button
+                type="button"
+                aria-label="Remove {{ file.name }}"
+                matTooltip="Remove file"
+                (click)="removeFile(index)"
+              >
+                <ng-icon name="lucideX" size="14" />
+              </button>
+            </span>
+          }
         </div>
       }
-    </section>
 
-    <footer class="composer-area">
       <div class="composer-shell">
         <mat-form-field class="composer-field" appearance="outline">
           <textarea
@@ -318,7 +110,7 @@
             cdkTextareaAutosize
             [cdkAutosizeMinRows]="1"
             [cdkAutosizeMaxRows]="8"
-            placeholder="Message Groq Chat"
+            placeholder="Ask anything..."
             aria-label="Message"
             [ngModel]="draft()"
             (ngModelChange)="draft.set($event)"
@@ -341,201 +133,71 @@
             class="send-button"
             aria-label="Send message"
             matTooltip="Send message"
-            [disabled]="!draft().trim() || !selectedModel()"
+            [disabled]="
+              (!draft().trim() && attachments().length === 0) ||
+              isReadingFiles() ||
+              !selectedModel()
+            "
             (click)="send()"
           >
-            <ng-icon name="lucideArrowUp" size="19" />
+            @if (isReadingFiles()) {
+              <span class="loading-indicator" aria-hidden="true"></span>
+            } @else {
+              <ng-icon name="lucideArrowUp" size="19" />
+            }
           </button>
         }
       </div>
-      <p class="composer-disclaimer">
-        Groq Chat can make mistakes. Check important information.
-        <span>Enter to send · Shift + Enter for a new line</span>
-      </p>
-    </footer>
-  </main>
 
-  @if (settingsOpen()) {
-    <div class="settings-backdrop" (click)="settingsOpen.set(false)">
-      <section
-        class="settings-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-title"
-        cdkTrapFocus
-        cdkTrapFocusAutoCapture
-        (click)="$event.stopPropagation()"
-      >
-        <header class="settings-header">
-          <div>
-            <span class="eyebrow">PREFERENCES</span>
-            <h2 id="settings-title">Settings</h2>
-          </div>
-          <button
-            mat-icon-button
-            class="icon-button"
-            aria-label="Close settings"
-            (click)="settingsOpen.set(false)"
-          >
-            <ng-icon name="lucideX" />
-          </button>
-        </header>
-        <div class="settings-content">
-          <section class="settings-section">
-            <div class="section-heading">
-              <span class="section-icon"><ng-icon name="lucideSlidersHorizontal" /></span>
-              <div>
-                <h3>Model</h3>
-                <p>Choose how your assistant responds.</p>
-              </div>
-            </div>
-            <label class="field-label" for="settings-model">Groq model</label>
-            <mat-form-field appearance="outline" class="settings-control">
-              <mat-select
-                id="settings-model"
-                [value]="state.settings().model"
-                (selectionChange)="onModelChange($event.value)"
-              >
-                @for (model of models(); track model.id) {
-                  <mat-option [value]="model.id">{{ model.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            @if (selectedModel()) {
-              <p class="field-help">
-                {{ selectedModel()?.contextWindow | number }} token context ·
-                {{ selectedModel()?.maxCompletionTokens | number }} max output
-              </p>
-            }
-            <label class="field-label" for="system-prompt">System prompt</label>
-            <mat-form-field appearance="outline" class="settings-control">
-              <textarea
-                id="system-prompt"
-                matInput
-                rows="4"
-                maxlength="8000"
-                [ngModel]="state.settings().systemPrompt"
-                (ngModelChange)="state.updateSettings({ systemPrompt: $event })"
-                placeholder="Set the assistant’s behavior"
-              ></textarea>
-            </mat-form-field>
-          </section>
-
-          <section class="settings-section">
-            <div class="section-heading">
-              <span class="section-icon"><ng-icon name="lucideSparkles" /></span>
-              <div>
-                <h3>Response</h3>
-                <p>Fine-tune output for this browser.</p>
-              </div>
-            </div>
-            <div class="range-heading">
-              <label class="field-label" for="temperature">Temperature</label>
-              <span>{{ state.settings().temperature | number: '1.1-1' }}</span>
-            </div>
-            <input
-              id="temperature"
-              class="range-control"
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              [disabled]="selectedModel() && !selectedModel()?.supportsTemperature"
-              [value]="state.settings().temperature"
-              (input)="setTemperature($any($event.target).value)"
-            />
-            <p class="field-help">Lower is more focused; higher is more varied.</p>
-            <label class="field-label" for="max-tokens">Maximum output tokens</label>
-            <mat-form-field appearance="outline" class="settings-control token-control">
-              <input
-                id="max-tokens"
-                matInput
-                type="number"
-                min="1"
-                [max]="selectedModel()?.maxCompletionTokens ?? 32768"
-                [value]="state.settings().maxTokens"
-                (change)="setMaxTokens($any($event.target).value)"
-              />
-            </mat-form-field>
-            <p class="field-help">Capped to the selected model’s supported output limit.</p>
-          </section>
-
-          <section class="settings-section">
-            <div class="section-heading">
-              <span class="section-icon"><ng-icon name="lucideMonitor" /></span>
-              <div>
-                <h3>Appearance</h3>
-                <p>Match your preferred reading environment.</p>
-              </div>
-            </div>
-            <div class="theme-options" role="group" aria-label="Appearance">
-              <button
-                class="theme-option"
-                [class.active]="state.settings().theme === 'system'"
-                (click)="toggleTheme('system')"
-              >
-                <ng-icon name="lucideMonitor" /><span>System</span>
-              </button>
-              <button
-                class="theme-option"
-                [class.active]="state.settings().theme === 'light'"
-                (click)="toggleTheme('light')"
-              >
-                <ng-icon name="lucideSun" /><span>Light</span>
-              </button>
-              <button
-                class="theme-option"
-                [class.active]="state.settings().theme === 'dark'"
-                (click)="toggleTheme('dark')"
-              >
-                <ng-icon name="lucideMoon" /><span>Dark</span>
-              </button>
-            </div>
-          </section>
-
-          <section class="settings-section history-management">
-            <div class="section-heading">
-              <span class="section-icon"><ng-icon name="lucideHistory" /></span>
-              <div>
-                <h3>Chat history</h3>
-                <p>Conversations are saved in this browser.</p>
-              </div>
-            </div>
-            @if (confirmClearHistory()) {
-              <div class="confirm-clear">
-                <p>Delete every saved conversation? This cannot be undone.</p>
-                <button mat-button (click)="confirmClearHistory.set(false)">Cancel</button>
-                <button mat-button class="danger-button" (click)="clearHistory()">
-                  Delete all
-                </button>
-              </div>
-            } @else {
-              <button
-                mat-button
-                class="clear-history-button"
-                (click)="confirmClearHistory.set(true)"
-              >
-                Clear all conversations
-              </button>
-            }
-          </section>
-
-          <section class="settings-section about-section">
-            <div class="section-heading">
-              <span class="section-icon"><ng-icon name="lucideBot" /></span>
-              <div>
-                <h3>About Groq Chat</h3>
-                <p>Private by design, powered by Groq.</p>
-              </div>
-            </div>
-            <p class="about-copy">
-              Your API key stays on the server. Chat history and preferences are stored locally in
-              this browser and are not uploaded.
-            </p>
-          </section>
+      <div class="composer-toolbar">
+        <input
+          #fileInput
+          class="file-input"
+          type="file"
+          multiple
+          accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml"
+          aria-label="Choose files to attach"
+          (change)="addFiles($event)"
+        />
+        <button
+          mat-button
+          class="add-files-button"
+          type="button"
+          [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
+          (click)="fileInput.click()"
+        >
+          <ng-icon name="lucidePaperclip" size="16" />
+          <span>Add files</span>
+        </button>
+        <div class="composer-options">
+          <label class="select-control">
+            <span class="visually-hidden">Choose model</span>
+            <select
+              aria-label="Choose model"
+              [value]="state.settings().model"
+              [disabled]="models().length === 0 || isGenerating()"
+              (change)="onModelChange($any($event.target).value)"
+            >
+              @for (model of models(); track model.id) {
+                <option [value]="model.id">{{ model.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="select-control thinking-select">
+            <span class="visually-hidden">Thinking level</span>
+            <select
+              aria-label="Thinking level"
+              [value]="state.settings().thinkingLevel"
+              [disabled]="isGenerating()"
+              (change)="onThinkingLevelChange($any($event.target).value)"
+            >
+              <option value="low">Low thinking</option>
+              <option value="medium">Medium thinking</option>
+              <option value="high">High thinking</option>
+            </select>
+          </label>
         </div>
-        <footer class="settings-footer">Groq Chat · Built for thoughtful conversations</footer>
-      </section>
-    </div>
-  }
+      </div>
+    </footer>
+  </ng-template>
 </div>
