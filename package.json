@@ -1,0 +1,56 @@
+{
+  "name": "groq-chat",
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "ng": "ng",
+    "start": "node --env-file-if-exists=.env --import=tsx --watch server/index.ts",
+    "start:prod": "node --env-file-if-exists=.env dist-server/server/index.js",
+    "dev": "concurrently \"ng serve --proxy-config proxy.conf.json\" \"node --env-file-if-exists=.env --import=tsx --watch server/index.ts\"",
+    "build": "ng build --configuration production && tsc -p tsconfig.server.json",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "test:server": "node --import=tsx --test server/index.test.ts",
+    "typecheck:server": "tsc -p tsconfig.server.json --noEmit"
+  },
+  "private": true,
+  "packageManager": "npm@11.19.1",
+  "dependencies": {
+    "@angular/cdk": "^22.3.0",
+    "@angular/common": "^22.3.0",
+    "@angular/compiler": "^22.3.0",
+    "@angular/core": "^22.3.0",
+    "@angular/forms": "^22.3.0",
+    "@angular/material": "^22.3.0",
+    "@angular/platform-browser": "^22.3.0",
+    "@angular/router": "^22.3.0",
+    "@ng-icons/core": "^36.1.0",
+    "@ng-icons/lucide": "^36.1.0",
+    "@shikijs/langs": "^4.6.0",
+    "@shikijs/themes": "^4.6.0",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
+    "groq-sdk": "^1.6.0",
+    "ngx-markdown": "^22.1.1",
+    "rxjs": "~7.8.0",
+    "shiki": "^4.6.0",
+    "tslib": "^2.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.3.0",
+    "@angular/cli": "^22.3.0",
+    "@angular/compiler-cli": "^22.3.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "concurrently": "^9.2.5",
+    "jsdom": "^31.0.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0"
+  }
+}
