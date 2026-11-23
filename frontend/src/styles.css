@@ -246,6 +246,12 @@ svg[lucideX] {
   scrollbar-width: none;
 }
 
+.code-block pre,
+.code-block pre code,
+.code-block pre code * {
+  color: #ffffff !important;
+}
+
 .code-block pre::-webkit-scrollbar {
   display: none;
   width: 0;

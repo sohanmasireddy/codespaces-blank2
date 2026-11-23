@@ -104,7 +104,7 @@
           cdkTextareaAutosize
           [cdkAutosizeMinRows]="1"
           [cdkAutosizeMaxRows]="7"
-          placeholder=""
+          placeholder="Type something..."
           aria-label="Message"
           [ngModel]="draft()"
           (ngModelChange)="draft.set($event)"
@@ -146,32 +146,24 @@
           </div>
 
           <div class="composer-right">
-            <label class="model-control">
-              <span class="visually-hidden">Choose model</span>
-              <select
-                aria-label="Choose model"
-                [value]="state.settings().model"
-                [disabled]="models().length === 0 || isGenerating()"
-                (change)="onModelChange($any($event.target).value)"
-              >
-                @for (model of models(); track model.id) {
-                  <option [value]="model.id">{{ model.label.toLowerCase() }}</option>
-                }
-              </select>
-            </label>
-            <label class="select-control thinking-select">
-              <span class="visually-hidden">Thinking level</span>
-              <select
-                aria-label="Thinking level"
-                [value]="state.settings().thinkingLevel"
-                [disabled]="isGenerating()"
-                (change)="onThinkingLevelChange($any($event.target).value)"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
+            <button
+              type="button"
+              class="model-control"
+              aria-label="Switch model"
+              [disabled]="models().length < 2 || isGenerating()"
+              (click)="switchModel()"
+            >
+              {{ selectedModel()?.label.toLowerCase() }}
+            </button>
+            <button
+              type="button"
+              class="thinking-select"
+              aria-label="Switch thinking level"
+              [disabled]="isGenerating()"
+              (click)="switchThinkingLevel()"
+            >
+              {{ state.settings().thinkingLevel }}
+            </button>
 
             @if (isGenerating()) {
               <button

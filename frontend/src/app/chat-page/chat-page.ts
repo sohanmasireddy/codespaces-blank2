@@ -358,6 +358,22 @@ export class ChatPage implements OnInit, OnDestroy {
     }
   }
 
+  switchModel(): void {
+    if (this.isGenerating() || this.models().length < 2) return;
+    const currentIndex = this.models().findIndex(
+      (model) => model.id === this.state.settings().model,
+    );
+    const nextModel = this.models()[(currentIndex + 1) % this.models().length];
+    if (nextModel) this.onModelChange(nextModel.id);
+  }
+
+  switchThinkingLevel(): void {
+    if (this.isGenerating()) return;
+    const levels: ThinkingLevel[] = ['low', 'medium', 'high'];
+    const currentIndex = levels.indexOf(this.state.settings().thinkingLevel);
+    this.onThinkingLevelChange(levels[(currentIndex + 1) % levels.length]);
+  }
+
   toggleWebSearch(): void {
     this.webSearchEnabled.update((enabled) => !enabled);
   }
