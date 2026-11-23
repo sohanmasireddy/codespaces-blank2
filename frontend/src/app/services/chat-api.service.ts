@@ -22,6 +22,15 @@ export class ChatApiService {
     return this.http.get<ModelInfo[]>('/api/models');
   }
 
+  search(query: string): Observable<{
+    results: Array<{ title: string; url: string; snippet: string }>;
+  }> {
+    return this.http.get<{ results: Array<{ title: string; url: string; snippet: string }> }>(
+      '/api/search',
+      { params: { query } },
+    );
+  }
+
   streamChat(request: ChatRequest): Observable<StreamEvent> {
     return new Observable<StreamEvent>((observer) => {
       const controller = new AbortController();

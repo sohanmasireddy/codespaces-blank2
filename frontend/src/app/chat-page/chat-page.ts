@@ -17,7 +17,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { NgIcon } from '@ng-icons/core';
 import { MarkdownComponent } from 'ngx-markdown';
-import { bufferTime, filter, Subscription } from 'rxjs';
+import { bufferTime, filter, firstValueFrom, Subscription } from 'rxjs';
 import { ChatMessage, ModelInfo, StreamEvent, ThinkingLevel } from '../models/chat.models';
 import { ChatApiService } from '../services/chat-api.service';
 import { ChatStateService } from '../services/chat-state.service';
@@ -98,6 +98,7 @@ export class ChatPage implements OnInit, OnDestroy {
   readonly attachments = signal<File[]>([]);
   readonly isReadingFiles = signal(false);
   readonly isGenerating = signal(false);
+  readonly webSearchEnabled = signal(false);
   readonly selectedModel = computed(
     () => this.models().find((model) => model.id === this.state.settings().model) ?? null,
   );
@@ -166,13 +167,36 @@ export class ChatPage implements OnInit, OnDestroy {
     this.draft.set('');
     this.attachments.set([]);
     this.scrollToBottom(true);
+
+    let searchContext = '';
+    if (this.webSearchEnabled()) {
+      try {
+        const searchQuery = prompt || content.slice(0, 500);
+        const response = await firstValueFrom(this.api.search(searchQuery));
+        if (response.results.length) {
+          searchContext =
+            'Use the following DuckDuckGo search results as supporting sources. Cite links by title and URL when relevant:\n\n' +
+            response.results
+              .map(
+                (result, index) =>
+                  `${index + 1}. ${result.title}\n${result.snippet}\n${result.url}`,
+              )
+              .join('\n\n');
+        }
+      } catch (error) {
+        this.errorMessage.set(
+          error instanceof Error ? error.message : 'Web search could not be completed.',
+        );
+      }
+    }
+
     this.startGeneration(conversation.id, [
       ...conversation.messages.map(({ role, content: text }) => ({
         role,
         content: text,
       })),
       { role: 'user', content },
-    ]);
+    ], searchContext);
   }
 
   private async prepareMessage(prompt: string, files: File[]): Promise<string> {
@@ -283,6 +307,10 @@ export class ChatPage implements OnInit, OnDestroy {
     }
   }
 
+  toggleWebSearch(): void {
+    this.webSearchEnabled.update((enabled) => !enabled);
+  }
+
   handleComposerKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
@@ -363,6 +391,7 @@ export class ChatPage implements OnInit, OnDestroy {
   private startGeneration(
     conversationId: string,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    searchContext = '',
   ): void {
     const model = this.selectedModel();
     if (!model) {
@@ -385,7 +414,9 @@ export class ChatPage implements OnInit, OnDestroy {
     const request = {
       model: model.id,
       messages,
-      systemPrompt: settings.systemPrompt,
+      systemPrompt: searchContext
+        ? `${settings.systemPrompt}\n\n${searchContext}`
+        : settings.systemPrompt,
       maxTokens: Math.min(settings.maxTokens, model.maxCompletionTokens),
       ...(model.supportsReasoning ? { reasoningEffort: settings.thinkingLevel } : {}),
     };

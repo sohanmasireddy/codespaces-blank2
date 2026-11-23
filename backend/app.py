@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from groq import AsyncGroq
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from ddgs import DDGS
+from ddgs.exceptions import DDGSException
 
 
 MODELS = [
@@ -108,6 +110,42 @@ async def health():
 @app.get("/api/models")
 async def models():
     return MODELS
+
+
+@app.get("/api/search")
+async def search(query: str):
+    query = query.strip()
+    if not 1 <= len(query) <= 500:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Search query must be between 1 and 500 characters."},
+        )
+    try:
+        results = list(DDGS().text(query, max_results=5))
+        return {
+            "results": [
+                {
+                    "title": result.get("title", ""),
+                    "url": result.get("href", ""),
+                    "snippet": result.get("body", ""),
+                }
+                for result in results
+            ]
+        }
+    except DDGSException as exc:
+        if str(exc) == "No results found.":
+            return {"results": []}
+        print(f"DuckDuckGo search failed: {exc}")
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Web search is temporarily unavailable."},
+        )
+    except Exception as exc:
+        print(f"DuckDuckGo search failed: {exc}")
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Web search is temporarily unavailable."},
+        )
 
 
 def is_rate_limited(client_ip: str) -> bool:

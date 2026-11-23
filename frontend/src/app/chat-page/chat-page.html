@@ -103,107 +103,116 @@
       }
 
       <div class="composer-shell">
-        <div class="composer-left">
-          <input
-            #fileInput
-            class="file-input"
-            type="file"
-            multiple
-            accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml"
-            aria-label="Choose files to attach"
-            (change)="addFiles($event)"
-          />
-          <button
-            type="button"
-            class="add-control"
-            aria-label="Add files"
-            matTooltip="Add files"
-            [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
-            (click)="fileInput.click()"
-          >
-            <ng-icon name="lucidePlus" size="27" />
-          </button>
-          <span class="web-control" aria-label="Web search enabled">
-            <ng-icon name="lucideGlobe" size="21" />
-            <span>Web Search</span>
-          </span>
-        </div>
+        <textarea
+          #composer
+          class="composer-input"
+          cdkTextareaAutosize
+          [cdkAutosizeMinRows]="1"
+          [cdkAutosizeMaxRows]="7"
+          placeholder=""
+          aria-label="Message"
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          (keydown)="handleComposerKeydown($event)"
+        ></textarea>
 
-        <mat-form-field class="composer-field" appearance="outline">
-          <textarea
-            #composer
-            matInput
-            cdkTextareaAutosize
-            [cdkAutosizeMinRows]="1"
-            [cdkAutosizeMaxRows]="8"
-            placeholder=""
-            aria-label="Message"
-            [ngModel]="draft()"
-            (ngModelChange)="draft.set($event)"
-            (keydown)="handleComposerKeydown($event)"
-          ></textarea>
-        </mat-form-field>
-
-        <div class="composer-right">
-          <ng-icon class="model-mark" name="lucideSparkles" size="21" />
-          <label class="model-control">
-            <span class="visually-hidden">Choose model</span>
-            <select
-              aria-label="Choose model"
-              [value]="state.settings().model"
-              [disabled]="models().length === 0 || isGenerating()"
-              (change)="onModelChange($any($event.target).value)"
+        <div class="composer-controls">
+          <div class="composer-left">
+            <input
+              #fileInput
+              class="file-input"
+              type="file"
+              multiple
+              accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml"
+              aria-label="Choose files to attach"
+              (change)="addFiles($event)"
+            />
+            <button
+              type="button"
+              class="add-control"
+              aria-label="Add files"
+              matTooltip="Add files"
+              [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
+              (click)="fileInput.click()"
             >
-              @for (model of models(); track model.id) {
-                <option [value]="model.id">{{ model.label.toLowerCase() }}</option>
-              }
-            </select>
-          </label>
-          <label class="select-control thinking-select">
-            <span class="visually-hidden">Thinking level</span>
-            <select
-              aria-label="Thinking level"
-              [value]="state.settings().thinkingLevel"
+              <ng-icon name="lucidePlus" size="27" />
+            </button>
+            <button
+              type="button"
+              class="web-control"
+              [class.active]="webSearchEnabled()"
+              [attr.aria-pressed]="webSearchEnabled()"
+              aria-label="Toggle DuckDuckGo web search"
+              matTooltip="DuckDuckGo web search"
               [disabled]="isGenerating()"
-              (change)="onThinkingLevelChange($any($event.target).value)"
+              (click)="toggleWebSearch()"
             >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </label>
-        </div>
+              <ng-icon name="lucideGlobe" size="21" />
+              <span>Web Search</span>
+            </button>
+          </div>
 
-        @if (isGenerating()) {
-          <button
-            mat-icon-button
-            class="send-button stop-button"
-            aria-label="Stop generating"
-            matTooltip="Stop generating"
-            (click)="stopGeneration()"
-          >
-            <ng-icon name="lucideSquare" size="17" />
-          </button>
-        } @else {
-          <button
-            mat-icon-button
-            class="send-button"
-            aria-label="Send message"
-            matTooltip="Send message"
-            [disabled]="
-              (!draft().trim() && attachments().length === 0) ||
-              isReadingFiles() ||
-              !selectedModel()
-            "
-            (click)="send()"
-          >
-            @if (isReadingFiles()) {
-              <span class="loading-indicator" aria-hidden="true"></span>
+          <div class="composer-right">
+            <ng-icon class="model-mark" name="lucideSparkles" size="21" />
+            <label class="model-control">
+              <span class="visually-hidden">Choose model</span>
+              <select
+                aria-label="Choose model"
+                [value]="state.settings().model"
+                [disabled]="models().length === 0 || isGenerating()"
+                (change)="onModelChange($any($event.target).value)"
+              >
+                @for (model of models(); track model.id) {
+                  <option [value]="model.id">{{ model.label.toLowerCase() }}</option>
+                }
+              </select>
+            </label>
+            <label class="select-control thinking-select">
+              <span class="visually-hidden">Thinking level</span>
+              <select
+                aria-label="Thinking level"
+                [value]="state.settings().thinkingLevel"
+                [disabled]="isGenerating()"
+                (change)="onThinkingLevelChange($any($event.target).value)"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+
+            @if (isGenerating()) {
+              <button
+                mat-icon-button
+                class="send-button stop-button"
+                aria-label="Stop generating"
+                matTooltip="Stop generating"
+                (click)="stopGeneration()"
+              >
+                <ng-icon name="lucideSquare" size="17" />
+              </button>
             } @else {
-              <ng-icon name="lucideArrowUp" size="19" />
+              <button
+                mat-icon-button
+                class="send-button"
+                aria-label="Send message"
+                matTooltip="Send message"
+                [disabled]="
+                  (!draft().trim() && attachments().length === 0) ||
+                  isReadingFiles() ||
+                  !selectedModel()
+                "
+                (click)="send()"
+              >
+                @if (isReadingFiles()) {
+                  <span class="loading-indicator" aria-hidden="true"></span>
+                } @else {
+                  <ng-icon name="lucideArrowUp" size="19" />
+                }
+              </button>
             }
-          </button>
-        }
+          </div>
+        </div>
       </div>
     </footer>
   </ng-template>

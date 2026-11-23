@@ -14,6 +14,11 @@ def test_health_endpoint():
     assert response.json() == {"status": "ok"}
 
 
+def test_search_rejects_empty_query():
+    response = client.get("/api/search", params={"query": "   "})
+    assert response.status_code == 400
+
+
 def test_model_endpoint():
     response = client.get("/api/models")
     assert response.status_code == 200
