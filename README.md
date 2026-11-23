@@ -66,8 +66,8 @@ prompted.
 
 For a manually configured Render service:
 
-- Build command: `npm ci --include=dev && npm run build && python -m pip install -r backend/requirements.txt`
-- Start command: `python -m uvicorn backend.app:app --host 0.0.0.0 --port $PORT`
+- Build command: `npm ci --include=dev && npm run build && python3 -m pip install --upgrade pip && python3 -m pip install -r backend/requirements.txt`
+- Start command: `python3 -m uvicorn backend.app:app --host 0.0.0.0 --port $PORT`
 - Environment: `GROQ_API_KEY` (secret)
 
 Do not set a fixed `PORT` on Render.
