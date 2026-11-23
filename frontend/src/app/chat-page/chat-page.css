@@ -165,14 +165,14 @@
   align-items: end;
   gap: 2px;
   padding: 12px 14px 10px 18px;
-  border: 0;
+  border: 1px solid var(--border-subtle);
   border-radius: 22px;
   background: var(--composer-bg);
   box-shadow: none;
 }
 
 .composer-shell:focus-within {
-  border: 0;
+  border-color: var(--border-strong);
   box-shadow: none;
 }
 
