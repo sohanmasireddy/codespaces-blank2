@@ -26,7 +26,7 @@ npm run install:dev
 cp .env.example .env
 ```
 
-Set `GROQ_API_KEY` in `.env`, then run:
+Set `GROQ_API_KEY` and `EXA_API_KEY` in `.env`, then run:
 
 ```bash
 npm run dev
@@ -61,14 +61,14 @@ serves that directory and its Angular Router routes, along with `/api` routes.
 ## Render deployment
 
 The included `render.yaml` configures a Python Render Web Service. Push the
-repository to GitHub, create a Render Blueprint, and set `GROQ_API_KEY` when
-prompted.
+repository to GitHub, create a Render Blueprint, and set `GROQ_API_KEY` and
+`EXA_API_KEY` when prompted. Web search requires an Exa API key.
 
 For a manually configured Render service:
 
 - Build command: `npm ci --include=dev && npm run build && python3 -m pip install --upgrade pip && python3 -m pip install -r backend/requirements.txt`
 - Start command: `python3 -m uvicorn backend.app:app --host 0.0.0.0 --port $PORT`
-- Environment: `GROQ_API_KEY` (secret)
+- Environment: `GROQ_API_KEY`, `EXA_API_KEY` (secrets)
 
 Do not set a fixed `PORT` on Render.
 

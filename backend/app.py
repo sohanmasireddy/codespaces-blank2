@@ -9,10 +9,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from exa_py import Exa
 from groq import AsyncGroq
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from ddgs import DDGS
-from ddgs.exceptions import DDGSException
 
 
 MODELS = [
@@ -120,28 +119,35 @@ async def search(query: str):
             status_code=400,
             content={"error": "Search query must be between 1 and 500 characters."},
         )
+    api_key = os.getenv("EXA_API_KEY")
+    if not api_key:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "Exa is not configured on this server. Set the EXA_API_KEY environment variable."
+            },
+        )
     try:
-        results = list(DDGS().text(query, max_results=5))
+        exa = Exa(api_key=api_key)
+        response = await asyncio.to_thread(
+            exa.search,
+            query,
+            type="auto",
+            num_results=5,
+            contents={"highlights": True},
+        )
         return {
             "results": [
                 {
-                    "title": result.get("title", ""),
-                    "url": result.get("href", ""),
-                    "snippet": result.get("body", ""),
+                    "title": result.title or "",
+                    "url": result.url,
+                    "snippet": "\n".join(result.highlights or []),
                 }
-                for result in results
+                for result in response.results
             ]
         }
-    except DDGSException as exc:
-        if str(exc) == "No results found.":
-            return {"results": []}
-        print(f"DuckDuckGo search failed: {exc}")
-        return JSONResponse(
-            status_code=502,
-            content={"error": "Web search is temporarily unavailable."},
-        )
     except Exception as exc:
-        print(f"DuckDuckGo search failed: {exc}")
+        print(f"Exa search failed: {exc}")
         return JSONResponse(
             status_code=502,
             content={"error": "Web search is temporarily unavailable."},

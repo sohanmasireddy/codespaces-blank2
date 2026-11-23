@@ -205,7 +205,7 @@ export class ChatPage implements OnInit, OnDestroy {
         const response = await firstValueFrom(this.api.search(searchQuery));
         if (response.results.length) {
           searchContext =
-            'Use the following DuckDuckGo search results as supporting sources. Cite links by title and URL when relevant:\n\n' +
+            'Use the following Exa search results as supporting sources. Cite links by title and URL when relevant:\n\n' +
             response.results
               .map(
                 (result, index) =>
