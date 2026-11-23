@@ -19,6 +19,72 @@ def test_search_rejects_empty_query():
     assert response.status_code == 400
 
 
+def test_image_search_rejects_empty_query():
+    response = client.get("/api/images", params={"query": "   "})
+    assert response.status_code == 400
+
+
+def test_image_search_returns_commons_results(monkeypatch):
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "query": {
+                    "pages": [
+                        {
+                            "title": "File:Red fox.jpg",
+                            "imageinfo": [
+                                {
+                                    "mime": "image/jpeg",
+                                    "thumburl": "https://thumb.wikimedia.org/example.jpg",
+                                    "descriptionurl": "https://commons.wikimedia.org/wiki/File:Red_fox.jpg",
+                                    "extmetadata": {
+                                        "LicenseShortName": {"value": "CC BY-SA 4.0"},
+                                        "Artist": {"value": "<a>Example photographer</a>"},
+                                    },
+                                }
+                            ],
+                        }
+                    ]
+                }
+            }
+
+    class FakeClient:
+        def __init__(self, *, timeout):
+            assert timeout == 12.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            pass
+
+        async def get(self, url, *, params, headers):
+            assert url == "https://commons.wikimedia.org/w/api.php"
+            assert params["gsrsearch"] == "red fox"
+            assert params["iiurlwidth"] == "640"
+            assert headers["User-Agent"].startswith("FastBot/")
+            return FakeResponse()
+
+    monkeypatch.setattr("backend.app.httpx.AsyncClient", FakeClient)
+    response = client.get("/api/images", params={"query": "red fox"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "results": [
+            {
+                "title": "Red fox.jpg",
+                "thumbnailUrl": "https://thumb.wikimedia.org/example.jpg",
+                "pageUrl": "https://commons.wikimedia.org/wiki/File:Red_fox.jpg",
+                "license": "CC BY-SA 4.0",
+                "attribution": "Example photographer",
+            }
+        ]
+    }
+
+
 def test_search_reports_missing_exa_credentials(monkeypatch):
     monkeypatch.delenv("EXA_API_KEY", raising=False)
     response = client.get("/api/search", params={"query": "latest news"})

@@ -56,7 +56,12 @@ serves that directory and its Angular Router routes, along with `/api` routes.
 
 - `GET /api/health`
 - `GET /api/models`
+- `GET /api/images?query=...` (Wikimedia Commons image search)
 - `POST /api/chat`
+
+Enable **Images** in the composer to search Wikimedia Commons and show
+thumbnails with license and attribution links in the chat. This does not
+require an additional API key.
 
 ## Render deployment
 

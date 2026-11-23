@@ -1,11 +1,7 @@
 <div class="app-shell">
   <main class="main-panel" (click)="copyCode($event)">
     @if (state.activeConversation()?.messages?.length) {
-      <div
-        #messageScroll
-        class="chat-scroll"
-        aria-live="polite"
-      >
+      <div #messageScroll class="chat-scroll" aria-live="polite">
         <div class="message-list">
           @for (message of state.activeConversation()?.messages ?? []; track message.id) {
             <article
@@ -28,6 +24,37 @@
                   <div class="typing-indicator" aria-label="Generating response">
                     <span></span><span></span><span></span>
                   </div>
+                }
+                @if (message.images !== undefined) {
+                  @if (message.images.length) {
+                    <div class="image-results" aria-label="Image search results">
+                      @for (image of message.images; track image.thumbnailUrl) {
+                        <a
+                          class="image-result"
+                          [href]="image.pageUrl"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            [src]="image.thumbnailUrl"
+                            [alt]="image.title"
+                            loading="lazy"
+                            decoding="async"
+                            referrerpolicy="no-referrer"
+                          />
+                          <span class="image-result-title">{{ image.title }}</span>
+                          <span class="image-result-credit">
+                            {{ image.license }}
+                            @if (image.attribution) {
+                              <span> · {{ image.attribution }}</span>
+                            }
+                          </span>
+                        </a>
+                      }
+                    </div>
+                  } @else {
+                    <p class="image-search-empty">No images found.</p>
+                  }
                 }
                 @if (message.role === 'assistant' && message.content) {
                   <div class="message-actions">
@@ -85,11 +112,7 @@
           @for (file of attachments(); track $index; let index = $index) {
             <span class="attachment-chip">
               <span class="attachment-name">{{ file.name }}</span>
-              <button
-                type="button"
-                aria-label="Remove {{ file.name }}"
-                (click)="removeFile(index)"
-              >
+              <button type="button" aria-label="Remove {{ file.name }}" (click)="removeFile(index)">
                 <svg lucideX [size]="20"></svg>
               </button>
             </span>
@@ -142,6 +165,18 @@
             >
               <svg lucideGlobe [size]="20"></svg>
               <span>Web Search</span>
+            </button>
+            <button
+              type="button"
+              class="image-control"
+              [class.active]="imageSearchEnabled()"
+              [attr.aria-pressed]="imageSearchEnabled()"
+              aria-label="Toggle image search"
+              [disabled]="isGenerating()"
+              (click)="toggleImageSearch()"
+            >
+              <svg lucideImage [size]="20"></svg>
+              <span>Images</span>
             </button>
           </div>
 

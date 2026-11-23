@@ -30,6 +30,32 @@ describe('ChatStateService', () => {
     expect(saved[0].messages[0].content).toBe(message.content);
   });
 
+  it('restores image search results from conversation history', () => {
+    const conversation = state.createConversation();
+    const images = [
+      {
+        title: 'Red fox',
+        thumbnailUrl: 'https://thumb.wikimedia.org/example.jpg',
+        pageUrl: 'https://commons.wikimedia.org/wiki/File:Red_fox.jpg',
+        license: 'CC BY-SA 4.0',
+        attribution: 'Example photographer',
+      },
+    ];
+    state.addMessage(conversation.id, {
+      id: 'assistant-1',
+      role: 'assistant',
+      content: 'Here are some images.',
+      createdAt: new Date().toISOString(),
+      images,
+    });
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [ChatStateService] });
+    state = TestBed.inject(ChatStateService);
+
+    expect(state.activeConversation()?.messages[0]?.images).toEqual(images);
+  });
+
   it('filters chat history by message content and selects a remaining chat after deletion', () => {
     const older = state.createConversation();
     state.addMessage(older.id, {

@@ -1,10 +1,14 @@
 import asyncio
+import html
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -33,6 +37,7 @@ MODELS = [
     },
 ]
 MODEL_IDS = {model["id"] for model in MODELS}
+COMMONS_API_URL = "https://commons.wikimedia.org/w/api.php"
 
 
 class Message(BaseModel):
@@ -151,6 +156,108 @@ async def search(query: str):
         return JSONResponse(
             status_code=502,
             content={"error": "Web search is temporarily unavailable."},
+        )
+
+
+def plain_metadata(value: object, max_length: int = 200) -> str:
+    if not isinstance(value, str):
+        return ""
+    return html.unescape(re.sub(r"<[^>]*>", "", value)).strip()[:max_length]
+
+
+async def commons_image_results(query: str) -> list[dict[str, str]]:
+    params = {
+        "action": "query",
+        "format": "json",
+        "formatversion": "2",
+        "generator": "search",
+        "gsrsearch": query,
+        "gsrnamespace": "6",
+        "gsrlimit": "5",
+        "prop": "imageinfo",
+        "iiprop": "url|mime|extmetadata",
+        "iiextmetadatafilter": "Artist|LicenseShortName",
+        "iiurlwidth": "640",
+    }
+    async with httpx.AsyncClient(timeout=12.0) as client:
+        response = await client.get(
+            COMMONS_API_URL,
+            params=params,
+            headers={"User-Agent": "FastBot/1.0 (Wikimedia Commons image search)"},
+        )
+        response.raise_for_status()
+        payload = response.json()
+
+    if not isinstance(payload, dict) or not isinstance(payload.get("query"), dict):
+        return []
+    pages = payload["query"].get("pages", [])
+    if not isinstance(pages, list):
+        return []
+
+    images: list[dict[str, str]] = []
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        image_info_list = page.get("imageinfo")
+        if not isinstance(image_info_list, list) or not image_info_list:
+            continue
+        image_info = image_info_list[0]
+        if not isinstance(image_info, dict) or not str(image_info.get("mime", "")).startswith(
+            "image/"
+        ):
+            continue
+        thumbnail_url = image_info.get("thumburl")
+        page_url = image_info.get("descriptionurl")
+        if not isinstance(thumbnail_url, str) or not isinstance(page_url, str):
+            continue
+        if (
+            urlsplit(thumbnail_url).hostname
+            not in {"thumb.wikimedia.org", "upload.wikimedia.org"}
+            or urlsplit(page_url).hostname != "commons.wikimedia.org"
+            or not thumbnail_url.startswith("https://")
+            or not page_url.startswith("https://")
+        ):
+            continue
+
+        metadata = image_info.get("extmetadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+        images.append(
+            {
+                "title": plain_metadata(page.get("title", "")).removeprefix("File:"),
+                "thumbnailUrl": thumbnail_url,
+                "pageUrl": page_url,
+                "license": plain_metadata(
+                    metadata.get("LicenseShortName", {}).get("value")
+                    if isinstance(metadata.get("LicenseShortName"), dict)
+                    else ""
+                )
+                or "License information unavailable",
+                "attribution": plain_metadata(
+                    metadata.get("Artist", {}).get("value")
+                    if isinstance(metadata.get("Artist"), dict)
+                    else ""
+                ),
+            }
+        )
+    return images
+
+
+@app.get("/api/images")
+async def search_images(query: str):
+    query = query.strip()
+    if not 1 <= len(query) <= 500:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Image search query must be between 1 and 500 characters."},
+        )
+    try:
+        return {"results": await commons_image_results(query)}
+    except (httpx.HTTPError, ValueError) as exc:
+        print(f"Wikimedia Commons image search failed: {exc}")
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Image search is temporarily unavailable."},
         )
 
 

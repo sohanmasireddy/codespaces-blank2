@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import {
   ChatMessage,
+  ChatImage,
   ChatSettings,
   Conversation,
   ConversationGroup,
@@ -52,10 +53,27 @@ function messageIsValid(value: unknown): value is ChatMessage {
     (message.role === 'user' || message.role === 'assistant') &&
     typeof message.content === 'string' &&
     typeof message.createdAt === 'string' &&
+    (message.images === undefined ||
+      (Array.isArray(message.images) && message.images.every(imageIsValid))) &&
     (!message.usage ||
       (typeof message.usage.promptTokens === 'number' &&
         typeof message.usage.completionTokens === 'number' &&
         typeof message.usage.totalTokens === 'number'))
+  );
+}
+
+function imageIsValid(value: unknown): value is ChatImage {
+  if (!value || typeof value !== 'object') return false;
+  const image = value as Partial<ChatImage>;
+  return (
+    typeof image.title === 'string' &&
+    typeof image.thumbnailUrl === 'string' &&
+    (image.thumbnailUrl.startsWith('https://thumb.wikimedia.org/') ||
+      image.thumbnailUrl.startsWith('https://upload.wikimedia.org/')) &&
+    typeof image.pageUrl === 'string' &&
+    image.pageUrl.startsWith('https://commons.wikimedia.org/') &&
+    typeof image.license === 'string' &&
+    typeof image.attribution === 'string'
   );
 }
 

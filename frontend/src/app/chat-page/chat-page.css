@@ -102,6 +102,57 @@
   white-space: pre-wrap;
 }
 
+.image-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.image-result {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.image-result img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--surface-muted);
+}
+
+.image-result-title,
+.image-result-credit {
+  display: block;
+  overflow: hidden;
+  padding: 5px 8px 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-result-title {
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.image-result-credit {
+  padding: 2px 8px 7px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.image-search-empty {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -236,6 +287,7 @@
 .composer-input,
 .add-control,
 .web-control,
+.image-control,
 .model-control,
 .thinking-select,
 .model-control select,
@@ -355,7 +407,8 @@
   cursor: default;
 }
 
-.web-control {
+.web-control,
+.image-control {
   display: inline-flex;
   height: 44px;
   align-items: center;
@@ -370,6 +423,21 @@
 
 .web-control.active {
   color: var(--accent);
+}
+
+.image-control {
+  color: #555a62;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.image-control.active {
+  color: var(--accent);
+}
+
+.image-control:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 
 .composer-toolbar {
@@ -540,6 +608,15 @@
 
   .composer-options {
     gap: 5px;
+  }
+
+  .web-control span,
+  .image-control span {
+    display: none;
+  }
+
+  .composer-left {
+    gap: 8px;
   }
 
   .select-control select {

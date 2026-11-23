@@ -8,6 +8,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,6 +21,7 @@ import {
   LucideArrowUp,
   LucideCopy,
   LucideGlobe,
+  LucideImage,
   LucideLoaderCircle,
   LucidePlus,
   LucideRotateCcw,
@@ -31,7 +33,13 @@ import { bufferTime, filter, firstValueFrom, Subscription } from 'rxjs';
 import Uppy from '@uppy/core';
 import { tool } from 'ai';
 import { z } from 'zod';
-import { ChatMessage, ModelInfo, StreamEvent, ThinkingLevel } from '../models/chat.models';
+import {
+  ChatImage,
+  ChatMessage,
+  ModelInfo,
+  StreamEvent,
+  ThinkingLevel,
+} from '../models/chat.models';
 import { ChatApiService } from '../services/chat-api.service';
 import { ChatStateService } from '../services/chat-state.service';
 import { ShikiHighlightDirective } from '../directives/shiki-highlight.directive';
@@ -81,6 +89,13 @@ function isTextFile(file: File): boolean {
   return TEXT_FILE_EXTENSIONS.has(fileExtension(file));
 }
 
+function httpErrorMessage(error: unknown): string | undefined {
+  if (!(error instanceof HttpErrorResponse)) return undefined;
+  const body: unknown = error.error;
+  if (typeof body !== 'object' || body === null || !('error' in body)) return undefined;
+  return typeof body.error === 'string' ? body.error : undefined;
+}
+
 @Component({
   selector: 'app-chat-page',
   standalone: true,
@@ -96,6 +111,7 @@ function isTextFile(file: File): boolean {
     LucideArrowUp,
     LucideCopy,
     LucideGlobe,
+    LucideImage,
     LucideLoaderCircle,
     LucidePlus,
     LucideRotateCcw,
@@ -120,6 +136,7 @@ export class ChatPage implements OnInit, OnDestroy {
   readonly isReadingFiles = signal(false);
   readonly isGenerating = signal(false);
   readonly webSearchEnabled = signal(false);
+  readonly imageSearchEnabled = signal(false);
   readonly selectedModel = computed(
     () => this.models().find((model) => model.id === this.state.settings().model) ?? null,
   );
@@ -199,9 +216,9 @@ export class ChatPage implements OnInit, OnDestroy {
     this.scrollToBottom(true);
 
     let searchContext = '';
+    const searchQuery = prompt || content.slice(0, 500);
     if (this.webSearchEnabled()) {
       try {
-        const searchQuery = prompt || content.slice(0, 500);
         const response = await firstValueFrom(this.api.search(searchQuery));
         if (response.results.length) {
           searchContext =
@@ -215,18 +232,36 @@ export class ChatPage implements OnInit, OnDestroy {
         }
       } catch (error) {
         this.errorMessage.set(
-          error instanceof Error ? error.message : 'Web search could not be completed.',
+          httpErrorMessage(error) ??
+            (error instanceof Error ? error.message : 'Web search could not be completed.'),
         );
       }
     }
 
-    this.startGeneration(conversation.id, [
-      ...conversation.messages.map(({ role, content: text }) => ({
-        role,
-        content: text,
-      })),
-      { role: 'user', content },
-    ], searchContext);
+    let imageResults: ChatImage[] | undefined;
+    if (this.imageSearchEnabled()) {
+      try {
+        imageResults = (await firstValueFrom(this.api.searchImages(searchQuery))).results;
+      } catch (error) {
+        this.errorMessage.set(
+          httpErrorMessage(error) ??
+            (error instanceof Error ? error.message : 'Image search could not be completed.'),
+        );
+      }
+    }
+
+    this.startGeneration(
+      conversation.id,
+      [
+        ...conversation.messages.map(({ role, content: text }) => ({
+          role,
+          content: text,
+        })),
+        { role: 'user', content },
+      ],
+      searchContext,
+      imageResults,
+    );
   }
 
   private async prepareMessage(prompt: string, files: File[]): Promise<string> {
@@ -256,7 +291,10 @@ export class ChatPage implements OnInit, OnDestroy {
   private async extractFileText(file: File): Promise<string> {
     const extension = fileExtension(file);
     if (isTextFile(file)) return file.text();
-    if (file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(extension)) {
+    if (
+      file.type.startsWith('image/') ||
+      ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(extension)
+    ) {
       const { recognize } = await import('tesseract.js');
       const result = await recognize(file, 'eng');
       return result.data.text;
@@ -376,6 +414,10 @@ export class ChatPage implements OnInit, OnDestroy {
     this.webSearchEnabled.update((enabled) => !enabled);
   }
 
+  toggleImageSearch(): void {
+    this.imageSearchEnabled.update((enabled) => !enabled);
+  }
+
   handleComposerKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
@@ -395,7 +437,7 @@ export class ChatPage implements OnInit, OnDestroy {
         .conversations()
         .find((conversation) => conversation.id === conversationId)
         ?.messages.find((item) => item.id === this.currentAssistantMessageId);
-      if (conversationId && message && !message.content) {
+      if (conversationId && message && !message.content && !message.images?.length) {
         this.state.removeMessage(conversationId, message.id);
       }
     }
@@ -416,12 +458,17 @@ export class ChatPage implements OnInit, OnDestroy {
       }
     }
     if (lastUserIndex < 0) return;
+    const imageResults = conversation.messages
+      .slice(lastUserIndex + 1)
+      .find((message) => message.role === 'assistant')?.images;
     const messages = conversation.messages.slice(0, lastUserIndex + 1);
     this.state.replaceMessages(conversation.id, messages);
     this.errorMessage.set('');
     this.startGeneration(
       conversation.id,
       messages.map(({ role, content }) => ({ role, content })),
+      '',
+      imageResults,
     );
     this.scrollToBottom(true);
   }
@@ -457,6 +504,7 @@ export class ChatPage implements OnInit, OnDestroy {
     conversationId: string,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     searchContext = '',
+    imageResults?: ChatImage[],
   ): void {
     const model = this.selectedModel();
     if (!model) {
@@ -470,6 +518,7 @@ export class ChatPage implements OnInit, OnDestroy {
       role: 'assistant',
       content: '',
       createdAt: new Date().toISOString(),
+      ...(imageResults ? { images: imageResults } : {}),
     };
     this.currentAssistantMessageId = assistantMessage.id;
     this.currentConversationId = conversationId;
@@ -496,7 +545,7 @@ export class ChatPage implements OnInit, OnDestroy {
         next: (events) => this.applyStreamEvents(conversationId, assistantMessage.id, events),
         error: (error: unknown) => {
           const current = this.findMessage(conversationId, assistantMessage.id);
-          if (current && !current.content) {
+          if (current && !current.content && !current.images?.length) {
             this.state.removeMessage(conversationId, assistantMessage.id);
           }
           this.errorMessage.set(
@@ -506,7 +555,7 @@ export class ChatPage implements OnInit, OnDestroy {
         },
         complete: () => {
           const current = this.findMessage(conversationId, assistantMessage.id);
-          if (current && !current.content && !this.stopping) {
+          if (current && !current.content && !current.images?.length && !this.stopping) {
             this.state.removeMessage(conversationId, assistantMessage.id);
             this.errorMessage.set('The model returned an empty response. Please try again.');
           }

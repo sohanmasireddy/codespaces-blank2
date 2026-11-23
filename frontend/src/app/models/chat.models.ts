@@ -8,12 +8,21 @@ export interface TokenUsage {
   totalTokens: number;
 }
 
+export interface ChatImage {
+  title: string;
+  thumbnailUrl: string;
+  pageUrl: string;
+  license: string;
+  attribution: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
   createdAt: string;
   usage?: TokenUsage;
+  images?: ChatImage[];
 }
 
 export interface Conversation {

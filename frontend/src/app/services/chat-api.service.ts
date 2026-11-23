@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { z } from 'zod';
-import { ChatRequest, ModelInfo, StreamEvent, TokenUsage } from '../models/chat.models';
+import { ChatImage, ChatRequest, ModelInfo, StreamEvent, TokenUsage } from '../models/chat.models';
 
 const modelSchema = z.object({
   id: z.string(),
@@ -17,6 +17,14 @@ const searchResultSchema = z.object({
   title: z.string(),
   url: z.string(),
   snippet: z.string(),
+});
+
+const imageResultSchema = z.object({
+  title: z.string(),
+  thumbnailUrl: z.string().url(),
+  pageUrl: z.string().url(),
+  license: z.string(),
+  attribution: z.string(),
 });
 
 const streamEventSchema = z.object({
@@ -58,13 +66,13 @@ export class ChatApiService {
   }> {
     return this.http
       .get<unknown>('/api/search', { params: { query } })
-      .pipe(
-        map((value) =>
-          z
-            .object({ results: z.array(searchResultSchema) })
-            .parse(value),
-        ),
-      );
+      .pipe(map((value) => z.object({ results: z.array(searchResultSchema) }).parse(value)));
+  }
+
+  searchImages(query: string): Observable<{ results: ChatImage[] }> {
+    return this.http
+      .get<unknown>('/api/images', { params: { query } })
+      .pipe(map((value) => z.object({ results: z.array(imageResultSchema) }).parse(value)));
   }
 
   streamChat(request: ChatRequest): Observable<StreamEvent> {
