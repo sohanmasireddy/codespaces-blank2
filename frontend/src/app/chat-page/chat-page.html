@@ -66,7 +66,7 @@
       <ng-container *ngTemplateOutlet="composerContent"></ng-container>
     } @else {
       <section class="landing">
-        <h1>Fastest chatbot</h1>
+        <h1>FastBot</h1>
         <ng-container *ngTemplateOutlet="composerContent"></ng-container>
       </section>
     }
@@ -103,6 +103,32 @@
       }
 
       <div class="composer-shell">
+        <div class="composer-left">
+          <input
+            #fileInput
+            class="file-input"
+            type="file"
+            multiple
+            accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml"
+            aria-label="Choose files to attach"
+            (change)="addFiles($event)"
+          />
+          <button
+            type="button"
+            class="add-control"
+            aria-label="Add files"
+            matTooltip="Add files"
+            [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
+            (click)="fileInput.click()"
+          >
+            <ng-icon name="lucidePlus" size="27" />
+          </button>
+          <span class="web-control" aria-label="Web search enabled">
+            <ng-icon name="lucideGlobe" size="21" />
+            <span>Web Search</span>
+          </span>
+        </div>
+
         <mat-form-field class="composer-field" appearance="outline">
           <textarea
             #composer
@@ -110,13 +136,44 @@
             cdkTextareaAutosize
             [cdkAutosizeMinRows]="1"
             [cdkAutosizeMaxRows]="8"
-            placeholder="Ask anything..."
+            placeholder=""
             aria-label="Message"
             [ngModel]="draft()"
             (ngModelChange)="draft.set($event)"
             (keydown)="handleComposerKeydown($event)"
           ></textarea>
         </mat-form-field>
+
+        <div class="composer-right">
+          <ng-icon class="model-mark" name="lucideSparkles" size="21" />
+          <label class="model-control">
+            <span class="visually-hidden">Choose model</span>
+            <select
+              aria-label="Choose model"
+              [value]="state.settings().model"
+              [disabled]="models().length === 0 || isGenerating()"
+              (change)="onModelChange($any($event.target).value)"
+            >
+              @for (model of models(); track model.id) {
+                <option [value]="model.id">{{ model.label.toLowerCase() }}</option>
+              }
+            </select>
+          </label>
+          <label class="select-control thinking-select">
+            <span class="visually-hidden">Thinking level</span>
+            <select
+              aria-label="Thinking level"
+              [value]="state.settings().thinkingLevel"
+              [disabled]="isGenerating()"
+              (change)="onThinkingLevelChange($any($event.target).value)"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+
         @if (isGenerating()) {
           <button
             mat-icon-button
@@ -147,56 +204,6 @@
             }
           </button>
         }
-      </div>
-
-      <div class="composer-toolbar">
-        <input
-          #fileInput
-          class="file-input"
-          type="file"
-          multiple
-          accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml"
-          aria-label="Choose files to attach"
-          (change)="addFiles($event)"
-        />
-        <button
-          mat-button
-          class="add-files-button"
-          type="button"
-          [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
-          (click)="fileInput.click()"
-        >
-          <ng-icon name="lucidePaperclip" size="16" />
-          <span>Add files</span>
-        </button>
-        <div class="composer-options">
-          <label class="select-control">
-            <span class="visually-hidden">Choose model</span>
-            <select
-              aria-label="Choose model"
-              [value]="state.settings().model"
-              [disabled]="models().length === 0 || isGenerating()"
-              (change)="onModelChange($any($event.target).value)"
-            >
-              @for (model of models(); track model.id) {
-                <option [value]="model.id">{{ model.label }}</option>
-              }
-            </select>
-          </label>
-          <label class="select-control thinking-select">
-            <span class="visually-hidden">Thinking level</span>
-            <select
-              aria-label="Thinking level"
-              [value]="state.settings().thinkingLevel"
-              [disabled]="isGenerating()"
-              (change)="onThinkingLevelChange($any($event.target).value)"
-            >
-              <option value="low">Low thinking</option>
-              <option value="medium">Medium thinking</option>
-              <option value="high">High thinking</option>
-            </select>
-          </label>
-        </div>
       </div>
     </footer>
   </ng-template>

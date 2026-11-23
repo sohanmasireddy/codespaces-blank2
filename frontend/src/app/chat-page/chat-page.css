@@ -22,21 +22,21 @@
 
 .landing {
   display: flex;
-  width: min(820px, calc(100% - 40px));
+  width: min(620px, calc(100% - 40px));
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   align-self: center;
-  padding: 24px 0;
+  padding: 20px 0 0;
 }
 
 .landing h1 {
-  margin: 0 0 24px;
+  margin: 0 0 82px;
   color: var(--text-primary);
-  font-size: clamp(26px, 4vw, 36px);
-  font-weight: 620;
-  letter-spacing: -1.2px;
+  font-size: 48px;
+  font-weight: 400;
+  letter-spacing: -1.8px;
   text-align: center;
 }
 
@@ -170,25 +170,25 @@
 
 .composer-area {
   z-index: 1;
-  width: min(820px, 100%);
+  width: min(620px, 100%);
   flex: 0 0 auto;
   margin: 0 auto;
 }
 
 .main-panel > .composer-area {
-  padding: 12px 0 20px;
+  padding: 12px 0 18px;
 }
 
 .composer-shell {
   display: flex;
-  min-height: 58px;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 10px 10px 8px 15px;
-  border: 1px solid var(--border-strong);
-  border-radius: 21px;
+  min-height: 86px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 12px 22px;
+  border: 1px solid #dedfe3;
+  border-radius: 22px;
   background: var(--composer-bg);
-  box-shadow: 0 4px 18px rgb(20 30 55 / 5%);
+  box-shadow: 0 5px 16px rgb(20 30 55 / 4%);
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease;
@@ -206,6 +206,10 @@
 }
 
 .composer-field .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.composer-field .mdc-notched-outline {
   display: none;
 }
 
@@ -236,14 +240,15 @@
   width: 36px !important;
   height: 36px !important;
   flex: 0 0 auto;
-  border-radius: 12px !important;
-  background: var(--accent) !important;
-  color: white !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: #4e535c !important;
+  box-shadow: none !important;
 }
 
 .send-button:disabled {
-  background: var(--surface-muted) !important;
-  color: var(--text-faint) !important;
+  background: transparent !important;
+  color: #60656d !important;
 }
 
 .send-button.stop-button {
@@ -270,6 +275,76 @@
 .composer-options {
   display: flex;
   align-items: center;
+}
+
+.composer-left,
+.composer-right {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.composer-left {
+  gap: 14px;
+  flex: 1;
+}
+
+.composer-right {
+  gap: 8px;
+  color: #555a62;
+  font-size: 13px;
+}
+
+.add-control {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #555a62;
+  cursor: pointer;
+}
+
+.add-control:disabled {
+  color: #a4a9b2;
+  cursor: default;
+}
+
+.web-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #555a62;
+  font-size: 14px;
+}
+
+.model-mark {
+  flex: 0 0 auto;
+  color: #555a62;
+}
+
+.model-control select,
+.thinking-select select {
+  height: 34px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #555a62;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.model-control select {
+  max-width: 130px;
+  padding: 0 5px;
+}
+
+.thinking-select select {
+  max-width: 58px;
+  padding: 0 4px;
 }
 
 .composer-toolbar {
