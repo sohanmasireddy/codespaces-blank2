@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { AfterViewInit, Directive, ElementRef, inject, OnDestroy } from '@angular/core';
 import type { HighlighterCore, LanguageInput } from 'shiki/core';
+import DOMPurify from 'dompurify';
 
 const languageLoaders: Record<string, () => LanguageInput> = {
   bash: () => import('@shikijs/langs/bash'),
@@ -76,6 +77,7 @@ export class ShikiHighlightDirective implements AfterViewInit, OnDestroy {
   }
 
   private highlightCode(): void {
+    void this.renderMath();
     for (const link of this.host.nativeElement.querySelectorAll<HTMLAnchorElement>('a')) {
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
@@ -97,6 +99,11 @@ export class ShikiHighlightDirective implements AfterViewInit, OnDestroy {
     const language = normalizedLanguage || rawLanguage;
     const source = code.textContent ?? '';
 
+    if (rawLanguage.toLowerCase() === 'mermaid') {
+      await this.renderMermaid(pre, source);
+      return;
+    }
+
     try {
       if (!normalizedLanguage) {
         this.wrapPlainCode(pre, language);
@@ -114,6 +121,55 @@ export class ShikiHighlightDirective implements AfterViewInit, OnDestroy {
     } catch (error) {
       console.error(`Unable to highlight ${language} code block.`, error);
       if (pre.isConnected) this.wrapPlainCode(pre, language);
+    }
+  }
+
+  private async renderMath(): Promise<void> {
+    const katex = await import('katex');
+    const walker = this.document.createTreeWalker(
+      this.host.nativeElement,
+      NodeFilter.SHOW_TEXT,
+    );
+    const replacements: Array<{ node: Text; html: string }> = [];
+    let node = walker.nextNode();
+    while (node) {
+      if (node.parentElement?.closest('pre,code')) {
+        node = walker.nextNode();
+        continue;
+      }
+      const text = node.textContent ?? '';
+      const match = /\$\$(.+?)\$\$|\$(.+?)\$/.exec(text);
+      if (match?.[0]) {
+        const expression = match[1] ?? match[2] ?? '';
+        const html = katex.renderToString(expression, {
+          displayMode: Boolean(match[1]),
+          throwOnError: false,
+        });
+        replacements.push({ node: node as Text, html });
+      }
+      node = walker.nextNode();
+    }
+    for (const replacement of replacements) {
+      if (!replacement.node.isConnected) continue;
+      const template = this.document.createElement('template');
+      template.innerHTML = DOMPurify.sanitize(replacement.html);
+      replacement.node.replaceWith(template.content);
+    }
+  }
+
+  private async renderMermaid(pre: HTMLPreElement, source: string): Promise<void> {
+    try {
+      const mermaid = (await import('mermaid')).default;
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      const id = `mermaid-${crypto.randomUUID()}`;
+      const result = await mermaid.render(id, source);
+      if (!pre.isConnected) return;
+      const container = this.document.createElement('div');
+      container.className = 'mermaid-diagram';
+      container.innerHTML = DOMPurify.sanitize(result.svg);
+      pre.replaceWith(container);
+    } catch (error) {
+      console.error('Unable to render Mermaid diagram.', error);
     }
   }
 
@@ -153,7 +209,9 @@ export class ShikiHighlightDirective implements AfterViewInit, OnDestroy {
     highlighted: string,
     language: string,
   ): void {
-    const fragment = this.document.createRange().createContextualFragment(highlighted);
+    const fragment = this.document
+      .createRange()
+      .createContextualFragment(DOMPurify.sanitize(highlighted));
     const pre = fragment.querySelector('pre');
     const code = pre?.querySelector('code');
     if (!pre || !code) return;

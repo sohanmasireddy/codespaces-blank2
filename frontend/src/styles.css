@@ -102,18 +102,22 @@ textarea {
   font: inherit;
 }
 
-ng-icon {
+svg[lucideIcon],
+svg[lucideAlertCircle],
+svg[lucideArrowUp],
+svg[lucideCopy],
+svg[lucideGlobe],
+svg[lucideLoaderCircle],
+svg[lucidePlus],
+svg[lucideRotateCcw],
+svg[lucideSquare],
+svg[lucideX] {
   display: inline-flex;
   width: 20px !important;
   height: 20px !important;
   align-items: center;
   justify-content: center;
   line-height: 0;
-}
-
-ng-icon svg {
-  width: 100% !important;
-  height: 100% !important;
 }
 
 * {

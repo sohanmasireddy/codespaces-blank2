@@ -1,7 +1,36 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
+import { z } from 'zod';
 import { ChatRequest, ModelInfo, StreamEvent, TokenUsage } from '../models/chat.models';
+
+const modelSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  contextWindow: z.number(),
+  maxCompletionTokens: z.number(),
+  supportsTemperature: z.boolean(),
+  supportsReasoning: z.boolean(),
+});
+
+const searchResultSchema = z.object({
+  title: z.string(),
+  url: z.string(),
+  snippet: z.string(),
+});
+
+const streamEventSchema = z.object({
+  type: z.enum(['delta', 'done', 'error']),
+  text: z.string().optional(),
+  message: z.string().optional(),
+  usage: z
+    .object({
+      prompt_tokens: z.number().optional(),
+      completion_tokens: z.number().optional(),
+      total_tokens: z.number().optional(),
+    })
+    .optional(),
+});
 
 interface ApiStreamEvent {
   type: 'delta' | 'done' | 'error';
@@ -19,16 +48,23 @@ export class ChatApiService {
   private readonly http = inject(HttpClient);
 
   getModels(): Observable<ModelInfo[]> {
-    return this.http.get<ModelInfo[]>('/api/models');
+    return this.http
+      .get<unknown>('/api/models')
+      .pipe(map((value) => z.array(modelSchema).parse(value)));
   }
 
   search(query: string): Observable<{
     results: Array<{ title: string; url: string; snippet: string }>;
   }> {
-    return this.http.get<{ results: Array<{ title: string; url: string; snippet: string }> }>(
-      '/api/search',
-      { params: { query } },
-    );
+    return this.http
+      .get<unknown>('/api/search', { params: { query } })
+      .pipe(
+        map((value) =>
+          z
+            .object({ results: z.array(searchResultSchema) })
+            .parse(value),
+        ),
+      );
   }
 
   streamChat(request: ChatRequest): Observable<StreamEvent> {
@@ -101,7 +137,7 @@ export class ChatApiService {
 
     let event: ApiStreamEvent;
     try {
-      event = JSON.parse(data) as ApiStreamEvent;
+      event = streamEventSchema.parse(JSON.parse(data)) as ApiStreamEvent;
     } catch {
       throw new Error('The server returned an invalid streaming event.');
     }

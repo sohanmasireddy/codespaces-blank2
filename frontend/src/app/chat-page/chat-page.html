@@ -1,15 +1,22 @@
 <div class="app-shell">
   <main class="main-panel" (click)="copyCode($event)">
     @if (state.activeConversation()?.messages?.length) {
-      <section class="chat-scroll" #messageScroll aria-live="polite">
+      <cdk-virtual-scroll-viewport
+        class="chat-scroll"
+        [itemSize]="140"
+        aria-live="polite"
+      >
         <div class="message-list">
-          @for (message of state.activeConversation()?.messages ?? []; track message.id) {
-            <article
-              class="message-row"
-              [class.user-message]="message.role === 'user'"
-              [class.assistant-message]="message.role === 'assistant'"
-            >
-              <div class="message-body">
+          <article
+            *cdkVirtualFor="
+              let message of state.activeConversation()?.messages ?? [];
+              trackBy: trackMessage
+            "
+            class="message-row"
+            [class.user-message]="message.role === 'user'"
+            [class.assistant-message]="message.role === 'assistant'"
+          >
+            <div class="message-body">
                 @if (message.content) {
                   <div class="markdown-body">
                     @if (isStreamingMessage(message)) {
@@ -32,7 +39,7 @@
                       aria-label="Copy response"
                       (click)="copyMessage(message)"
                     >
-                      <ng-icon name="lucideCopy" />
+                      <svg lucideCopy [size]="20"></svg>
                     </button>
                     @if (isLastAssistant(message) && !isGenerating()) {
                       <button
@@ -40,7 +47,7 @@
                         aria-label="Regenerate response"
                         (click)="regenerate()"
                       >
-                        <ng-icon name="lucideRotateCcw" />
+                        <svg lucideRotateCcw [size]="20"></svg>
                       </button>
                     }
                     @if (message.usage) {
@@ -48,11 +55,10 @@
                     }
                   </div>
                 }
-              </div>
-            </article>
-          }
+            </div>
+          </article>
         </div>
-      </section>
+      </cdk-virtual-scroll-viewport>
       <ng-container *ngTemplateOutlet="composerContent"></ng-container>
     } @else {
       <section class="landing">
@@ -63,10 +69,10 @@
 
     @if (errorMessage()) {
       <div class="notice notice-error" role="alert">
-        <ng-icon name="lucideAlertCircle" />
+        <svg lucideAlertCircle [size]="20"></svg>
         <span>{{ errorMessage() }}</span>
         <button mat-icon-button aria-label="Dismiss error" (click)="errorMessage.set('')">
-          <ng-icon name="lucideX" />
+          <svg lucideX [size]="20"></svg>
         </button>
       </div>
     }
@@ -84,7 +90,7 @@
                 aria-label="Remove {{ file.name }}"
                 (click)="removeFile(index)"
               >
-                <ng-icon name="lucideX" />
+                <svg lucideX [size]="20"></svg>
               </button>
             </span>
           }
@@ -112,7 +118,7 @@
               class="file-input"
               type="file"
               multiple
-              accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml"
+              accept=".c,.cc,.cpp,.cs,.css,.csv,.docx,.go,.h,.html,.java,.js,.json,.jsx,.kt,.log,.md,.mjs,.pdf,.php,.py,.rb,.rs,.sh,.sql,.svg,.swift,.ts,.tsx,.txt,.xml,.yaml,.yml,image/*"
               aria-label="Choose files to attach"
               (change)="addFiles($event)"
             />
@@ -123,7 +129,7 @@
               [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
               (click)="fileInput.click()"
             >
-              <ng-icon name="lucidePlus" />
+              <svg lucidePlus [size]="20"></svg>
             </button>
             <button
               type="button"
@@ -134,7 +140,7 @@
               [disabled]="isGenerating()"
               (click)="toggleWebSearch()"
             >
-              <ng-icon name="lucideGlobe" />
+              <svg lucideGlobe [size]="20"></svg>
               <span>Web Search</span>
             </button>
           </div>
@@ -174,7 +180,7 @@
                 aria-label="Stop generating"
                 (click)="stopGeneration()"
               >
-                <ng-icon name="lucideSquare" />
+                <svg lucideSquare [size]="20"></svg>
               </button>
             } @else {
               <button
@@ -189,9 +195,9 @@
                 (click)="send()"
               >
                 @if (isReadingFiles()) {
-                  <ng-icon class="loading-indicator" name="lucideLoaderCircle" />
+                  <svg class="loading-indicator" lucideLoaderCircle [size]="20"></svg>
                 } @else {
-                  <ng-icon name="lucideArrowUp" />
+                  <svg lucideArrowUp [size]="20"></svg>
                 }
               </button>
             }

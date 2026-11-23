@@ -15,9 +15,23 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { NgIcon } from '@ng-icons/core';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import {
+  LucideAlertCircle,
+  LucideArrowUp,
+  LucideCopy,
+  LucideGlobe,
+  LucideLoaderCircle,
+  LucidePlus,
+  LucideRotateCcw,
+  LucideSquare,
+  LucideX,
+} from '@lucide/angular';
 import { MarkdownComponent } from 'ngx-markdown';
 import { bufferTime, filter, firstValueFrom, Subscription } from 'rxjs';
+import Uppy from '@uppy/core';
+import { tool } from 'ai';
+import { z } from 'zod';
 import { ChatMessage, ModelInfo, StreamEvent, ThinkingLevel } from '../models/chat.models';
 import { ChatApiService } from '../services/chat-api.service';
 import { ChatStateService } from '../services/chat-state.service';
@@ -79,7 +93,16 @@ function isTextFile(file: File): boolean {
     MatInputModule,
     MatTooltipModule,
     TextFieldModule,
-    NgIcon,
+    ScrollingModule,
+    LucideAlertCircle,
+    LucideArrowUp,
+    LucideCopy,
+    LucideGlobe,
+    LucideLoaderCircle,
+    LucidePlus,
+    LucideRotateCcw,
+    LucideSquare,
+    LucideX,
     MarkdownComponent,
     ShikiHighlightDirective,
   ],
@@ -90,7 +113,7 @@ export class ChatPage implements OnInit, OnDestroy {
   readonly state = inject(ChatStateService);
   private readonly api = inject(ChatApiService);
 
-  @ViewChild('messageScroll') private messageScroll?: ElementRef<HTMLElement>;
+  @ViewChild(CdkVirtualScrollViewport) private messageScroll?: CdkVirtualScrollViewport;
 
   readonly models = signal<ModelInfo[]>([]);
   readonly errorMessage = signal('');
@@ -108,7 +131,16 @@ export class ChatPage implements OnInit, OnDestroy {
   private currentConversationId?: string;
   private stopping = false;
 
+  readonly webSearchTool = tool({
+    description: 'Search the web and return supporting sources.',
+    inputSchema: z.object({ query: z.string().min(1).max(500) }),
+    execute: async ({ query }) => firstValueFrom(this.api.search(query)),
+  });
+
   ngOnInit(): void {
+    void import('motion').then(({ animate }) => {
+      animate('.landing, .composer-area', { opacity: [0, 1], y: [8, 0] }, { duration: 0.35 });
+    });
     this.api.getModels().subscribe({
       next: (models) => {
         this.models.set(models);
@@ -226,6 +258,11 @@ export class ChatPage implements OnInit, OnDestroy {
   private async extractFileText(file: File): Promise<string> {
     const extension = fileExtension(file);
     if (isTextFile(file)) return file.text();
+    if (file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(extension)) {
+      const { recognize } = await import('tesseract.js');
+      const result = await recognize(file, 'eng');
+      return result.data.text;
+    }
     if (extension === 'docx') {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
@@ -267,23 +304,37 @@ export class ChatPage implements OnInit, OnDestroy {
     this.errorMessage.set('');
     const selected = Array.from(input.files ?? []);
     input.value = '';
+    const uppy = new Uppy({
+      restrictions: {
+        maxFileSize: MAX_FILE_SIZE,
+        maxNumberOfFiles: MAX_FILES,
+      },
+      autoProceed: false,
+    });
     const next = [...this.attachments()];
     for (const file of selected) {
-      if (!isTextFile(file) && !['pdf', 'docx'].includes(fileExtension(file))) {
+      const supported =
+        isTextFile(file) ||
+        ['pdf', 'docx'].includes(fileExtension(file)) ||
+        file.type.startsWith('image/');
+      if (!supported) {
         this.errorMessage.set(
-          `Unsupported file type: ${file.name}. Add text, code, PDF, or DOCX files.`,
+          `Unsupported file type: ${file.name}. Add text, code, PDF, DOCX, or image files.`,
         );
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        this.errorMessage.set(`${file.name} is larger than the 5 MB per-file limit.`);
         continue;
       }
       if (next.length >= MAX_FILES) {
         this.errorMessage.set(`You can attach up to ${MAX_FILES} files at a time.`);
         break;
       }
-      next.push(file);
+      try {
+        uppy.addFile({ name: file.name, type: file.type, data: file, source: 'chat' });
+        next.push(file);
+      } catch (error) {
+        this.errorMessage.set(
+          error instanceof Error ? error.message : `${file.name} could not be added.`,
+        );
+      }
     }
     this.attachments.set(next);
   }
@@ -386,6 +437,10 @@ export class ChatPage implements OnInit, OnDestroy {
 
   isStreamingMessage(message: ChatMessage): boolean {
     return this.isGenerating() && message.id === this.currentAssistantMessageId;
+  }
+
+  trackMessage(_index: number, message: ChatMessage): string {
+    return message.id;
   }
 
   private startGeneration(
@@ -502,13 +557,17 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   private scrollToBottom(force = false, smooth = true): void {
-    const element = this.messageScroll?.nativeElement;
-    if (!element) return;
+    const viewport = this.messageScroll;
+    if (!viewport) return;
+    const element = viewport.elementRef.nativeElement;
     const nearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 120;
     if (!force && !nearBottom) return;
     requestAnimationFrame(() => {
-      if (smooth) element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' });
-      else element.scrollTop = element.scrollHeight;
+      if (smooth) {
+        viewport.scrollToIndex(viewport.getDataLength() - 1, 'smooth');
+      } else {
+        viewport.scrollToIndex(viewport.getDataLength() - 1, 'auto');
+      }
     });
   }
 }
