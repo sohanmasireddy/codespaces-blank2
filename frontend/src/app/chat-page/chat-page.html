@@ -30,19 +30,17 @@
                     <button
                       mat-icon-button
                       aria-label="Copy response"
-                      matTooltip="Copy response"
                       (click)="copyMessage(message)"
                     >
-                      <ng-icon name="lucideCopy" size="16" />
+                      <ng-icon name="lucideCopy" />
                     </button>
                     @if (isLastAssistant(message) && !isGenerating()) {
                       <button
                         mat-icon-button
                         aria-label="Regenerate response"
-                        matTooltip="Regenerate response"
                         (click)="regenerate()"
                       >
-                        <ng-icon name="lucideRotateCcw" size="16" />
+                        <ng-icon name="lucideRotateCcw" />
                       </button>
                     }
                     @if (message.usage) {
@@ -84,10 +82,9 @@
               <button
                 type="button"
                 aria-label="Remove {{ file.name }}"
-                matTooltip="Remove file"
                 (click)="removeFile(index)"
               >
-                <ng-icon name="lucideX" size="14" />
+                <ng-icon name="lucideX" />
               </button>
             </span>
           }
@@ -123,11 +120,10 @@
               type="button"
               class="add-control"
               aria-label="Add files"
-              matTooltip="Add files"
               [disabled]="attachments().length >= 5 || isReadingFiles() || isGenerating()"
               (click)="fileInput.click()"
             >
-              <ng-icon name="lucidePlus" size="27" />
+              <ng-icon name="lucidePlus" />
             </button>
             <button
               type="button"
@@ -135,11 +131,10 @@
               [class.active]="webSearchEnabled()"
               [attr.aria-pressed]="webSearchEnabled()"
               aria-label="Toggle DuckDuckGo web search"
-              matTooltip="DuckDuckGo web search"
               [disabled]="isGenerating()"
               (click)="toggleWebSearch()"
             >
-              <ng-icon name="lucideGlobe" size="21" />
+              <ng-icon name="lucideGlobe" />
               <span>Web Search</span>
             </button>
           </div>
@@ -177,17 +172,15 @@
                 mat-icon-button
                 class="send-button stop-button"
                 aria-label="Stop generating"
-                matTooltip="Stop generating"
                 (click)="stopGeneration()"
               >
-                <ng-icon name="lucideSquare" size="17" />
+                <ng-icon name="lucideSquare" />
               </button>
             } @else {
               <button
                 mat-icon-button
                 class="send-button"
                 aria-label="Send message"
-                matTooltip="Send message"
                 [disabled]="
                   (!draft().trim() && attachments().length === 0) ||
                   isReadingFiles() ||
@@ -198,7 +191,7 @@
                 @if (isReadingFiles()) {
                   <span class="loading-indicator" aria-hidden="true"></span>
                 } @else {
-                  <ng-icon name="lucideArrowUp" size="19" />
+                  <ng-icon name="lucideArrowUp" />
                 }
               </button>
             }

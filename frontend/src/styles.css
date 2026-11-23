@@ -104,9 +104,24 @@ textarea {
 
 ng-icon {
   display: inline-flex;
+  width: 20px !important;
+  height: 20px !important;
   align-items: center;
   justify-content: center;
   line-height: 0;
+}
+
+ng-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 .markdown-body {
@@ -224,8 +239,13 @@ ng-icon {
   background: #0e1117 !important;
   font-size: 12px;
   line-height: 1.6;
-  scrollbar-color: #494e57 transparent;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.code-block pre::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .code-block pre code {
