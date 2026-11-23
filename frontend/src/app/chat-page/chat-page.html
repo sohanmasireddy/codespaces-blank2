@@ -189,7 +189,7 @@
                 (click)="send()"
               >
                 @if (isReadingFiles()) {
-                  <span class="loading-indicator" aria-hidden="true"></span>
+                  <ng-icon class="loading-indicator" name="lucideLoaderCircle" />
                 } @else {
                   <ng-icon name="lucideArrowUp" />
                 }
