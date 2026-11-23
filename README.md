@@ -1,107 +1,81 @@
 # Groq Chat
 
-A responsive Angular chat application backed by Groq's Chat Completions API. The
-Angular app and Express API are served from one Node.js process in production.
-Conversations and preferences stay in the current browser; the Groq API key stays
-on the server.
+A responsive Angular chat application backed by a Python FastAPI server and Groq's
+Chat Completions API.
+
+## Structure
+
+- `frontend/` - Angular application
+- `backend/` - Python/FastAPI API, tests, and dependencies
+- `render.yaml` - Render Blueprint
+
+Conversations stay in browser `localStorage`. The Groq API key stays in the
+Python backend and is never returned or bundled into the frontend.
 
 ## Requirements
 
 - Node.js `>=24.15.0 <25` and npm
+- Python 3.11+
 - A Groq API key from [Groq Console](https://console.groq.com/keys)
 
 ## Local development
 
 ```bash
 npm ci
+npm run install:dev
 cp .env.example .env
 ```
 
-Add your key to `.env`:
-
-```dotenv
-GROQ_API_KEY=your_real_key_here
-```
-
-Do not commit `.env`. Start both services:
+Set `GROQ_API_KEY` in `.env`, then run:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:4200](http://localhost:4200). Angular's development
-server proxies `/api` requests to Express on port 3000. Alternatively,
-`npm start` runs only the Express server on port 3000.
+Open [http://localhost:4200](http://localhost:4200). Angular proxies `/api`
+requests to the FastAPI server on port 3000.
 
-## Build and run in production mode
+To run only the Python server:
+
+```bash
+npm start
+```
+
+## Production
 
 ```bash
 npm run build
+npm run install:python
 npm run start:prod
 ```
 
-The build produces the optimized Angular app in `dist/groq-chat/browser` and
-compiles the API to `dist-server/server`. Express serves both the API and
-Angular files, including the Angular Router fallback. The server uses
-`process.env.PORT` (3000 locally when it is unset).
+The Angular build is written to `frontend/dist/groq-chat/browser`. FastAPI
+serves that directory and its Angular Router routes, along with `/api` routes.
 
 ## API
 
-- `GET /api/health` — health check
-- `GET /api/models` — the server's explicitly configured production-model list
-- `POST /api/chat` — validated, cancellable Server-Sent Events stream
-
-The server validates request sizes, roles, model IDs, generation settings, and
-output-token limits with Zod. Chat requests are limited to 30 per IP per 15
-minutes. The Groq key is read only from `GROQ_API_KEY`; it is never included in
-the frontend bundle or returned by an endpoint. Streaming errors are returned
-as safe, user-facing messages. If Groq reports usage in a stream, the UI shows
-the token total; the current stream API does not guarantee usage metadata.
-
-The model allowlist is centralized in `server/models.ts`. It contains Groq's
-`openai/gpt-oss-20b` and `openai/gpt-oss-120b` models. The composer exposes both
-models and their low, medium, and high reasoning levels. Text and code files,
-PDFs, and DOCX documents are extracted in the browser and included as text in
-the chat request; up to five files can be attached at once, each limited to
-5 MB, with extracted content capped at 40,000 characters per message. Update
-the allowlist and limits when Groq's catalog changes.
+- `GET /api/health`
+- `GET /api/models`
+- `POST /api/chat`
 
 ## Render deployment
 
-This repository includes a Render Blueprint in `render.yaml`:
+The included `render.yaml` configures a Python Render Web Service. Push the
+repository to GitHub, create a Render Blueprint, and set `GROQ_API_KEY` when
+prompted.
 
-1. Push the repository to GitHub and create a new Blueprint in Render.
-2. Set the required `GROQ_API_KEY` secret when prompted.
-3. Deploy. The blueprint runs `npm ci --include=dev && npm run build`, then
-   starts the compiled Express server with `npm run start:prod`.
-4. Render provides the `PORT`; `/api/health` is configured as the health check.
+For a manually configured Render service:
 
-For a manually configured Render Web Service, use:
+- Build command: `npm ci --include=dev && npm run build && python -m pip install -r backend/requirements.txt`
+- Start command: `python -m uvicorn backend.app:app --host 0.0.0.0 --port $PORT`
+- Environment: `GROQ_API_KEY` (secret)
 
-- **Build command:** `npm ci --include=dev && npm run build`
-- **Start command:** `npm run start:prod`
-- **Environment:** `GROQ_API_KEY` (secret), `NODE_ENV=production`
-
-Do not set a fixed `PORT` on Render. The service uses Render's assigned port.
-
-## Data and safety
-
-- Browser `localStorage` stores conversations, selected model, thinking level, prompt, and
-  appearance. Clearing site data removes them; there is no server-side history
-  or database.
-- Markdown is rendered by `ngx-markdown` with Angular's sanitizer enabled.
-  Shiki highlighting is lazy-loaded for common languages; unknown language
-  fences remain safely escaped plain text and still have a copy button.
-- Markdown links open in a new tab with `noopener noreferrer`.
-- The API accepts no cross-origin browser requests by default and has a
-  per-IP chat-request limit. Configure a shared rate-limit store if deploying
-  multiple server instances.
+Do not set a fixed `PORT` on Render.
 
 ## Checks
 
 ```bash
 npm run build
-npm run typecheck:server
 npm run test:server
 npm test
 ```

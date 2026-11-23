@@ -1,0 +1,6 @@
+fastapi==0.115.12
+groq==0.31.0
+httpx==0.28.1
+python-dotenv==1.1.1
+uvicorn[standard]==0.34.3
+pytest==8.4.1
