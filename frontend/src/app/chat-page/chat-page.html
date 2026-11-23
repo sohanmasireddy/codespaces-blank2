@@ -1,22 +1,19 @@
 <div class="app-shell">
   <main class="main-panel" (click)="copyCode($event)">
     @if (state.activeConversation()?.messages?.length) {
-      <cdk-virtual-scroll-viewport
+      <div
+        #messageScroll
         class="chat-scroll"
-        [itemSize]="140"
         aria-live="polite"
       >
         <div class="message-list">
-          <article
-            *cdkVirtualFor="
-              let message of state.activeConversation()?.messages ?? [];
-              trackBy: trackMessage
-            "
-            class="message-row"
-            [class.user-message]="message.role === 'user'"
-            [class.assistant-message]="message.role === 'assistant'"
-          >
-            <div class="message-body">
+          @for (message of state.activeConversation()?.messages ?? []; track message.id) {
+            <article
+              class="message-row"
+              [class.user-message]="message.role === 'user'"
+              [class.assistant-message]="message.role === 'assistant'"
+            >
+              <div class="message-body">
                 @if (message.content) {
                   <div class="markdown-body">
                     @if (isStreamingMessage(message)) {
@@ -36,6 +33,7 @@
                   <div class="message-actions">
                     <button
                       mat-icon-button
+                      class="message-action-button"
                       aria-label="Copy response"
                       (click)="copyMessage(message)"
                     >
@@ -44,6 +42,7 @@
                     @if (isLastAssistant(message) && !isGenerating()) {
                       <button
                         mat-icon-button
+                        class="message-action-button"
                         aria-label="Regenerate response"
                         (click)="regenerate()"
                       >
@@ -55,10 +54,11 @@
                     }
                   </div>
                 }
-            </div>
-          </article>
+              </div>
+            </article>
+          }
         </div>
-      </cdk-virtual-scroll-viewport>
+      </div>
       <ng-container *ngTemplateOutlet="composerContent"></ng-container>
     } @else {
       <section class="landing">

@@ -15,7 +15,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
   LucideAlertCircle,
   LucideArrowUp,
@@ -93,7 +92,6 @@ function isTextFile(file: File): boolean {
     MatInputModule,
     MatTooltipModule,
     TextFieldModule,
-    ScrollingModule,
     LucideAlertCircle,
     LucideArrowUp,
     LucideCopy,
@@ -113,7 +111,7 @@ export class ChatPage implements OnInit, OnDestroy {
   readonly state = inject(ChatStateService);
   private readonly api = inject(ChatApiService);
 
-  @ViewChild(CdkVirtualScrollViewport) private messageScroll?: CdkVirtualScrollViewport;
+  @ViewChild('messageScroll') private messageScroll?: ElementRef<HTMLDivElement>;
 
   readonly models = signal<ModelInfo[]>([]);
   readonly errorMessage = signal('');
@@ -455,10 +453,6 @@ export class ChatPage implements OnInit, OnDestroy {
     return this.isGenerating() && message.id === this.currentAssistantMessageId;
   }
 
-  trackMessage(_index: number, message: ChatMessage): string {
-    return message.id;
-  }
-
   private startGeneration(
     conversationId: string,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
@@ -573,17 +567,12 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   private scrollToBottom(force = false, smooth = true): void {
-    const viewport = this.messageScroll;
-    if (!viewport) return;
-    const element = viewport.elementRef.nativeElement;
+    const element = this.messageScroll?.nativeElement;
+    if (!element) return;
     const nearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 120;
     if (!force && !nearBottom) return;
     requestAnimationFrame(() => {
-      if (smooth) {
-        viewport.scrollToIndex(viewport.getDataLength() - 1, 'smooth');
-      } else {
-        viewport.scrollToIndex(viewport.getDataLength() - 1, 'auto');
-      }
+      element.scrollTo({ top: element.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     });
   }
 }
