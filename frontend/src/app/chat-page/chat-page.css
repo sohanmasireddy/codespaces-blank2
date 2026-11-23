@@ -94,6 +94,14 @@
   overflow-wrap: anywhere;
 }
 
+.user-message .markdown-body {
+  white-space: normal;
+}
+
+.user-message .markdown-body p {
+  white-space: pre-wrap;
+}
+
 .typing-indicator {
   display: flex;
   align-items: center;
