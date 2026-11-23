@@ -68,32 +68,6 @@
   gap: 11px;
 }
 
-.assistant-avatar {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--accent);
-}
-
-.user-avatar {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  place-items: center;
-  margin-top: 2px;
-  border-radius: 50%;
-  background: var(--avatar-bg);
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 650;
-}
-
 .message-body {
   min-width: 0;
   max-width: min(100%, 710px);
@@ -318,11 +292,6 @@
   color: var(--accent);
 }
 
-.model-mark {
-  flex: 0 0 auto;
-  color: #555a62;
-}
-
 .model-control select,
 .thinking-select select {
   height: 34px;
@@ -507,7 +476,7 @@
   }
 
   .user-message .message-body {
-    max-width: calc(100% - 46px);
+    max-width: calc(100% - 32px);
   }
 
   .composer-options {

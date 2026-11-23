@@ -9,11 +9,6 @@
               [class.user-message]="message.role === 'user'"
               [class.assistant-message]="message.role === 'assistant'"
             >
-              @if (message.role === 'assistant') {
-                <div class="assistant-avatar" aria-hidden="true">
-                  <ng-icon name="lucideSparkles" size="17" />
-                </div>
-              }
               <div class="message-body">
                 @if (message.content) {
                   <div class="markdown-body">
@@ -56,9 +51,6 @@
                   </div>
                 }
               </div>
-              @if (message.role === 'user') {
-                <div class="user-avatar" aria-hidden="true">Y</div>
-              }
             </article>
           }
         </div>
@@ -153,7 +145,6 @@
           </div>
 
           <div class="composer-right">
-            <ng-icon class="model-mark" name="lucideSparkles" size="21" />
             <label class="model-control">
               <span class="visually-hidden">Choose model</span>
               <select
